@@ -8,10 +8,13 @@
 #include <string.h>
 #include <sys/time.h>
 #include <errno.h>
+#include <time.h>
 
 void help(void);
 char *get_fileType(struct stat *st);
 void regFile_Recursive(char* FILENAME, int FILESIZE, char* path);
+void print_regFileList(char* path_FILENAME);
+void print_dirFileList(void);
 
 char* regFileList_Candidate[1024];
 char* pathSet[1024];
@@ -50,27 +53,21 @@ int main(int argc, char** argv){
 //		printf("%d %ld %d %ld %ld %d %d\n", 0, st.st_size, st.st_mode, st.st_blocks, st.st_nlink, st.st_uid, st.st_gid);
 
 		struct dirent** namelist = NULL;
-		int errCheck = 0;
 		struct stat st;
 		char* FILENAME_realpath = NULL;
 		switch(command_t){ 
 			case 0: // "find"
 				if(parsedInput[1][0] == '.'){
-					if((FILENAME_realpath = realpath(parsedInput[1], NULL)) == NULL){
-						printf("FILENAME_realpath error.\n");
-					}
+					if((FILENAME_realpath = realpath(parsedInput[1], NULL)) == NULL){}
 				}
 				else if(parsedInput[1][0] == '/'){
 					FILENAME_realpath = parsedInput[1];
 				}
 				else{
 					char dot_slash[] = "./";
-					FILENAME_realpath = strcat(dot_slash, parsedInput[1]);
-					if((FILENAME_realpath = realpath(FILENAME_realpath, NULL)) == NULL){
-						printf("FILENAME_realpath error.\n");
-					}
+					FILENAME_realpath = strcat(dot_slash, parsedInput[1]); 
+					if((FILENAME_realpath = realpath(FILENAME_realpath, NULL)) == NULL){}
 				}
-				printf("FILENAME_realpath : %s\n", FILENAME_realpath);
 
 				if(stat(FILENAME_realpath, &st) == 0){ // if [FILENAME] exist.
 					char* realPath = NULL;
@@ -131,7 +128,7 @@ int main(int argc, char** argv){
 							printf("Invalid flag.\n");
 							break;
 						case EFAULT:
-							printf("Path error.\n");
+							printf("[FILENAME] isn't exists.\n");
 							break;
 						case ELOOP:
 							printf("Too many symbolic links.\n");
@@ -157,6 +154,7 @@ int main(int argc, char** argv){
 					}
 					break;
 				}				
+				print_regFileList(FILENAME_realpath);
 				FILENAME_realpath = NULL;
 				k = 0;
 				break;
@@ -212,9 +210,10 @@ void regFile_Recursive(char* FILENAME, int FILESIZE, char* path){ // target file
 	struct stat st;
 	int fileCount = scandir(path, &namelist, NULL, alphasort);
 	char* FILETYPE = get_fileType(&st);
-	char* DIRLIST[1024] = {NULL, };
 	int DIRCOUNT = 0;
+
 	/*** get Directory file count ***/
+	printf("Traversing ..\n");
 	for(int i=0; i<fileCount; i++){
 		char* slash = "/";
 		char* tmp_path = (char*)malloc(1024);
@@ -225,17 +224,17 @@ void regFile_Recursive(char* FILENAME, int FILESIZE, char* path){ // target file
 		printf("tmp_path : %s\n", tmp_path);
 		free(tmp_path);
 		if(S_ISREG(st.st_mode)){
-			printf("%d) %20s	 %s\n", i+1, namelist[i]->d_name, "regular");
+			printf("type : %s\n", "regular");
 		}
 		if(S_ISDIR(st.st_mode)){
-			printf("%d) %20s	%s\n", i+1, namelist[i]->d_name, "directory");
+			printf("type : %s\n", "directory");
 			DIRCOUNT++;
 		}
 	}
 	
-	if(DIRCOUNT == 0){ // if direcory file count == 0 (if there is no directory)
+	if(DIRCOUNT == 0){ // if there is no directory
 		printf("No DIR file.\n");
-		for(int i=0; i<fileCount; i++){ // visit all regular files.
+		for(int i=0; i<fileCount; i++){ // visit all files.
 			char* slash = "/";
 			char* tmp_path = (char*)malloc(1024);
 			strcpy(tmp_path, path);
@@ -245,11 +244,10 @@ void regFile_Recursive(char* FILENAME, int FILESIZE, char* path){ // target file
 			stat(pathSet[k], &st);
 			free(tmp_path);
 			 
-			printf("(No more directory)path : %s\n", pathSet[k]);
 			int fileCount1 = scandir(pathSet[k], &namelist, NULL, alphasort);
 			if( (strcmp(FILENAME, namelist[i]->d_name) == 0) && (st.st_size == FILESIZE) ){
-				regFileList_Candidate[j++] = pathSet[k]; // make "path"
-				printf("%s   ", regFileList_Candidate[j-1]);
+				regFileList_Candidate[j++] = pathSet[k];
+				printf("regFileList_Candidate : %s\n", regFileList_Candidate[j-1]);
 				k++;
 				return;
 			}
@@ -257,7 +255,6 @@ void regFile_Recursive(char* FILENAME, int FILESIZE, char* path){ // target file
 		}
 	}
 	else { // if there is directory file
-		printf("Still there are more than one DIR files.\n");
 		for(int i=0; i<fileCount; i++){
 			char* slash = "/";
 			char* tmp_path = (char*)malloc(1024);
@@ -266,8 +263,7 @@ void regFile_Recursive(char* FILENAME, int FILESIZE, char* path){ // target file
 			strcat(tmp_path, namelist[i]->d_name);
 			pathSet[k] = tmp_path;
 			stat(pathSet[k], &st);
-			printf("tmp : %s\n", tmp_path);
-			printf("(Still \"IS\" directory)path : %s\n", pathSet[k]);
+			printf("real path : %s\n", tmp_path);
 
 			if(S_ISDIR(st.st_mode)){
 				if(strcmp(namelist[i]->d_name, ".") == 0 || strcmp(namelist[i]->d_name, "..") == 0 ){}
@@ -278,18 +274,43 @@ void regFile_Recursive(char* FILENAME, int FILESIZE, char* path){ // target file
 			}
 			else {
 				if( (strcmp(FILENAME, namelist[i]->d_name) == 0) && (st.st_size == FILESIZE)){
-					regFileList_Candidate[j++] = pathSet[k]; // make "path"
-					printf("%s   ", regFileList_Candidate[j-1]);
+					regFileList_Candidate[j++] = pathSet[k];
+					printf("regFileList_Candidate : %s\n", regFileList_Candidate[j-1]);
 					k++;
 				}
 			}
 			free(tmp_path);
 		}
 	}
-
 }
 
+void print_regFileList(char* path_FILENAME){
+	struct stat st;
+	stat(path_FILENAME, &st);
+	time_t *at = st.st_atime;
+	time_t *ct = st.st_ctime;
+	time_t *mt = st.st_mtime;
+	struct tm *At;
+	localtime_r(at, At);
+	struct tm *Ct;
+	localtime_r(ct, Ct);
+	struct tm *Mt;
+	localtime_r(mt, Mt);
+	printf("Index Size Mode     Blocks Links UID GID Access         Change         Modify         Path\n");
+	printf("%-5d %-4ld %-10d %-6ld %-5ld %-3d %-3d %-7d %d-%d-%d %d:%d %d-%d-%d %d:%d %d-%d-%d %d:%d %s\n",
+			0, st.st_size, st.st_mode, st.st_blocks, st.st_nlink, st.st_uid, st.st_gid,
+			At->tm_year+1900, At->tm_mon+1, At->tm_mday+1, At->tm_hour, At->tm_min,
+			Ct->tm_year+1900, Ct->tm_mon+1, Ct->tm_mday+1, Ct->tm_hour, Ct->tm_min,
+			Mt->tm_year+1900, Mt->tm_mon+1, Mt->tm_mday+1, Mt->tm_hour, Mt->tm_min,
+		  	path_FILENAME);
+	for(int i=0; i<j; i++){
+		
+	}
+}
 
+void print_dirFileList(){
+
+}
 
 
 
