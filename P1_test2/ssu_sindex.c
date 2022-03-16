@@ -208,7 +208,6 @@ char* get_fileType(struct stat *st){
 }
 
 void regFile_Recursive(char* FILENAME, int FILESIZE, char* path){ // target file's name, target file's size, path
-	
 	struct dirent** namelist = NULL;
 	struct stat st;
 	int fileCount = scandir(path, &namelist, NULL, alphasort);
@@ -220,11 +219,10 @@ void regFile_Recursive(char* FILENAME, int FILESIZE, char* path){ // target file
 		char* slash = "/";
 		char* tmp_path = (char*)malloc(1024);
 		strcpy(tmp_path, path);
-		printf("tmp_path1 : %s\n", tmp_path);
 		strcat(tmp_path, slash);
 		strcat(tmp_path, namelist[i]->d_name);
 		stat(tmp_path, &st);
-		printf("tmp_path2 : %s\n", tmp_path);
+		printf("tmp_path : %s\n", tmp_path);
 		free(tmp_path);
 		if(S_ISREG(st.st_mode)){
 			printf("%d) %20s	 %s\n", i+1, namelist[i]->d_name, "regular");
@@ -236,6 +234,7 @@ void regFile_Recursive(char* FILENAME, int FILESIZE, char* path){ // target file
 	}
 	
 	if(DIRCOUNT == 0){ // if direcory file count == 0 (if there is no directory)
+		printf("No DIR file.\n");
 		for(int i=0; i<fileCount; i++){ // visit all regular files.
 			char* slash = "/";
 			char* tmp_path = (char*)malloc(1024);
@@ -252,11 +251,13 @@ void regFile_Recursive(char* FILENAME, int FILESIZE, char* path){ // target file
 				regFileList_Candidate[j++] = pathSet[k]; // make "path"
 				printf("%s   ", regFileList_Candidate[j-1]);
 				k++;
+				return;
 			}
 
 		}
 	}
 	else { // if there is directory file
+		printf("Still there are more than one DIR files.\n");
 		for(int i=0; i<fileCount; i++){
 			char* slash = "/";
 			char* tmp_path = (char*)malloc(1024);
@@ -265,11 +266,15 @@ void regFile_Recursive(char* FILENAME, int FILESIZE, char* path){ // target file
 			strcat(tmp_path, namelist[i]->d_name);
 			pathSet[k] = tmp_path;
 			stat(pathSet[k], &st);
-			free(tmp_path);	
+			printf("tmp : %s\n", tmp_path);
 			printf("(Still \"IS\" directory)path : %s\n", pathSet[k]);
 
 			if(S_ISDIR(st.st_mode)){
-				regFile_Recursive(FILENAME, FILESIZE, path);
+				if(strcmp(namelist[i]->d_name, ".") == 0 || strcmp(namelist[i]->d_name, "..") == 0 ){}
+				else{
+					printf("Recursive!!!!!\n\n");
+					regFile_Recursive(FILENAME, FILESIZE, tmp_path);
+				}
 			}
 			else {
 				if( (strcmp(FILENAME, namelist[i]->d_name) == 0) && (st.st_size == FILESIZE)){
@@ -278,6 +283,7 @@ void regFile_Recursive(char* FILENAME, int FILESIZE, char* path){ // target file
 					k++;
 				}
 			}
+			free(tmp_path);
 		}
 	}
 
