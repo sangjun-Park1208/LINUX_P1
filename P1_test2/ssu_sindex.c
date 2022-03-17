@@ -26,6 +26,7 @@ char* rwx[8] = {"---", "--x", "-w-", "-wx", "r--", "r-x", "rw-", "rwx"};
 int main(int argc, char** argv){
 	struct timeval startTime, endTime;
 	gettimeofday(&startTime, NULL); // start time cheking
+	
 	for(int i=0; i<1024; i++){
 		*(regFileList_Candidate + i) = (char*)malloc(1024);
 	}
@@ -108,23 +109,14 @@ int main(int argc, char** argv){
 						}
 						else{
 							regFile_Recursive(parsedInput[1], st.st_size, realPath);
-//							j = 0;
 							memset(&st, 0, sizeof(struct stat));
 						}
 						
-//						for(int i=0; i<j; i++){
-//							printf("%d) %s\n", i, regFileList_Candidate[i]);
-//						}
 					}
 					else{ // if [PATH] is real path
 						realPath = parsedInput[2];
 						regFile_Recursive(parsedInput[1], st.st_size, realPath);
 						memset(&st, 0, sizeof(struct stat));
-
-//						for(int i=0; i<j; i++){
-//							printf("%d) %s", i, regFileList_Candidate[i]);
-//						}
-//						j = 0;
 					}
 					realPath = NULL;
 				}	
@@ -169,9 +161,6 @@ int main(int argc, char** argv){
 				print_regFileList(FILENAME_realpath);
 				FILENAME_realpath = NULL;
 				k = 0;
-//				for(int i=0; i<j; i++){
-//					printf("%d) %s\n", i, regFileList_Candidate[i]);
-//				}
 				break;
 	
 			case 1: // "exit"
@@ -261,9 +250,7 @@ void regFile_Recursive(char* FILENAME, int FILESIZE, char* path){ // target file
 			
 			int fileCount1 = scandir(pathSet[k], &namelist, NULL, alphasort);
 			if( (strcmp(FILENAME, namelist[i]->d_name) == 0) && (st.st_size == FILESIZE) ){
-//				regFileList_Candidate[j++] = pathSet[k];
 				strcpy(regFileList_Candidate[j++], pathSet[k]);
-//				printf("regFileList_Candidate : %s\n", regFileList_Candidate[j-1]);
 				k++;
 				return;
 			}
@@ -283,6 +270,8 @@ void regFile_Recursive(char* FILENAME, int FILESIZE, char* path){ // target file
 
 			if(S_ISDIR(st.st_mode)){
 				if(strcmp(namelist[i]->d_name, ".") == 0 || strcmp(namelist[i]->d_name, "..") == 0 ){}
+				else if(strcmp(namelist[i]->d_name, "proc") == 0 || strcmp(namelist[i]->d_name, "run") == 0 || strcmp(namelist[i]->d_name, "snap") == 0){}
+				else if(strcmp(namelist[i]->d_name, "bin") == 0 || strcmp(namelist[i]->d_name, "sys") == 0 || strcmp(namelist[i]->d_name, "opt") == 0){}
 				else{
 					printf("Recursive!!!!!\n\n");
 					regFile_Recursive(FILENAME, FILESIZE, tmp_path);
@@ -291,8 +280,6 @@ void regFile_Recursive(char* FILENAME, int FILESIZE, char* path){ // target file
 			else {
 				if( (strcmp(FILENAME, namelist[i]->d_name) == 0) && (st.st_size == FILESIZE)){
 					strcpy(regFileList_Candidate[j++], pathSet[k]);
-//					regFileList_Candidate[j++] = pathSet[k];
-//					printf("regFileList_Candidate : %s\n", regFileList_Candidate[j-1]);
 					k++;
 				}
 			}
@@ -315,6 +302,19 @@ void print_regFileList(char* path_FILENAME){
 	localtime_r(&at, &aT);
 	localtime_r(&ct, &cT);
 	localtime_r(&mt, &mT);
+
+	for(int t=0; t<j-1; t++){
+		for(int i=j-1; i >= 1; i--){
+			char* tmp = (char*)malloc(1024);
+			if(strlen(regFileList_Candidate[i+1]) < strlen(regFileList_Candidate[i])){
+				strcpy(tmp, regFileList_Candidate[i]);
+				strcpy(regFileList_Candidate[i], regFileList_Candidate[i+1]);
+				strcpy(regFileList_Candidate[i+1], tmp);
+				free(tmp);
+			}
+		}
+	}
+
 	printf("Index Size Mode       Blocks Links UID  GID  Access       Change       Modify       Path\n");
 
 	printf("%-5d %-4ld %-10s %-6ld %-5ld %-4d %-4d %d-%d-%d %d:%d %d-%d-%d %d:%d %d-%d-%d %d:%d %s\n",
@@ -326,14 +326,32 @@ void print_regFileList(char* path_FILENAME){
 	memset(&st, 0, sizeof(struct stat));
 
 	for(int i=1; i <= j-1; i++){
-		stat(regFileList_Candidate[i], &st);
+		struct stat st1;
+		char* tmpreg = (char*)malloc(1024);
+		strcpy(tmpreg, regFileList_Candidate[i]);
+		stat(tmpreg, &st1);
+
+		time_t at = st1.st_atime;
+		time_t ct = st1.st_ctime;
+		time_t mt = st1.st_mtime;
+		struct tm aT;
+		struct tm cT;
+		struct tm mT;
+	
+		localtime_r(&at, &aT);
+		localtime_r(&ct, &cT);
+		localtime_r(&mt, &mT);
+	
 		printf("%-5d %-4ld %-10s %-6ld %-5ld %-4d %-4d %d-%d-%d %d:%d %d-%d-%d %d:%d %d-%d-%d %d:%d %s\n",
-			i, st.st_size, map_fileType(&st), st.st_blocks, st.st_nlink, st.st_uid, st.st_gid,
+			i, st1.st_size, map_fileType(&st1), st1.st_blocks, st1.st_nlink, st1.st_uid, st1.st_gid,
 			aT.tm_year+1900-2000, aT.tm_mon+1, aT.tm_mday+1, aT.tm_hour, aT.tm_min,
 			cT.tm_year+1900-2000, cT.tm_mon+1, cT.tm_mday+1, cT.tm_hour, cT.tm_min,
 			mT.tm_year+1900-2000, mT.tm_mon+1, mT.tm_mday+1, mT.tm_hour, mT.tm_min,
 		  	regFileList_Candidate[i]);
+		memset(&st1, 0, sizeof(struct stat));
+		free(tmpreg);
 	}
+
 	j = 0;
 }
 
@@ -355,19 +373,9 @@ char* map_fileType(struct stat *st){
 	return accessMode;
 }
 
-
-
 void print_dirFileList(){
 
 }
-
-
-
-
-
-
-
-
 
 
 
