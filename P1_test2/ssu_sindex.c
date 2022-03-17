@@ -11,18 +11,24 @@
 #include <time.h>
 
 void help(void);
-char *get_fileType(struct stat *st);
+char* get_fileType(struct stat *st);
 void regFile_Recursive(char* FILENAME, int FILESIZE, char* path);
 void print_regFileList(char* path_FILENAME);
 void print_dirFileList(void);
+char* map_fileType(struct stat *st);
 
 char* regFileList_Candidate[1024];
 char* pathSet[1024];
 int j;
 int k;
+char* rwx[8] = {"---", "--x", "-w-", "-wx", "r--", "r-x", "rw-", "rwx"};
+
 int main(int argc, char** argv){
 	struct timeval startTime, endTime;
 	gettimeofday(&startTime, NULL); // start time cheking
+	for(int i=0; i<1024; i++){
+		*(regFileList_Candidate + i) = (char*)malloc(1024);
+	}
 
 	while(1){		
 		char* parsedInput[1024];
@@ -49,8 +55,6 @@ int main(int argc, char** argv){
 		else{
 			command_t = 2;
 		}
-	
-//		printf("%d %ld %d %ld %ld %d %d\n", 0, st.st_size, st.st_mode, st.st_blocks, st.st_nlink, st.st_uid, st.st_gid);
 
 		struct dirent** namelist = NULL;
 		struct stat st;
@@ -104,15 +108,23 @@ int main(int argc, char** argv){
 						}
 						else{
 							regFile_Recursive(parsedInput[1], st.st_size, realPath);
-							j = 0;
+//							j = 0;
 							memset(&st, 0, sizeof(struct stat));
 						}
+						
+//						for(int i=0; i<j; i++){
+//							printf("%d) %s\n", i, regFileList_Candidate[i]);
+//						}
 					}
 					else{ // if [PATH] is real path
 						realPath = parsedInput[2];
 						regFile_Recursive(parsedInput[1], st.st_size, realPath);
 						memset(&st, 0, sizeof(struct stat));
-						j = 0;
+
+//						for(int i=0; i<j; i++){
+//							printf("%d) %s", i, regFileList_Candidate[i]);
+//						}
+//						j = 0;
 					}
 					realPath = NULL;
 				}	
@@ -157,6 +169,9 @@ int main(int argc, char** argv){
 				print_regFileList(FILENAME_realpath);
 				FILENAME_realpath = NULL;
 				k = 0;
+//				for(int i=0; i<j; i++){
+//					printf("%d) %s\n", i, regFileList_Candidate[i]);
+//				}
 				break;
 	
 			case 1: // "exit"
@@ -243,11 +258,12 @@ void regFile_Recursive(char* FILENAME, int FILESIZE, char* path){ // target file
 			pathSet[k] = tmp_path;
 			stat(pathSet[k], &st);
 			free(tmp_path);
-			 
+			
 			int fileCount1 = scandir(pathSet[k], &namelist, NULL, alphasort);
 			if( (strcmp(FILENAME, namelist[i]->d_name) == 0) && (st.st_size == FILESIZE) ){
-				regFileList_Candidate[j++] = pathSet[k];
-				printf("regFileList_Candidate : %s\n", regFileList_Candidate[j-1]);
+//				regFileList_Candidate[j++] = pathSet[k];
+				strcpy(regFileList_Candidate[j++], pathSet[k]);
+//				printf("regFileList_Candidate : %s\n", regFileList_Candidate[j-1]);
 				k++;
 				return;
 			}
@@ -274,8 +290,9 @@ void regFile_Recursive(char* FILENAME, int FILESIZE, char* path){ // target file
 			}
 			else {
 				if( (strcmp(FILENAME, namelist[i]->d_name) == 0) && (st.st_size == FILESIZE)){
-					regFileList_Candidate[j++] = pathSet[k];
-					printf("regFileList_Candidate : %s\n", regFileList_Candidate[j-1]);
+					strcpy(regFileList_Candidate[j++], pathSet[k]);
+//					regFileList_Candidate[j++] = pathSet[k];
+//					printf("regFileList_Candidate : %s\n", regFileList_Candidate[j-1]);
 					k++;
 				}
 			}
@@ -287,26 +304,58 @@ void regFile_Recursive(char* FILENAME, int FILESIZE, char* path){ // target file
 void print_regFileList(char* path_FILENAME){
 	struct stat st;
 	stat(path_FILENAME, &st);
-	time_t *at = st.st_atime;
-	time_t *ct = st.st_ctime;
-	time_t *mt = st.st_mtime;
-	struct tm *At;
-	localtime_r(at, At);
-	struct tm *Ct;
-	localtime_r(ct, Ct);
-	struct tm *Mt;
-	localtime_r(mt, Mt);
-	printf("Index Size Mode     Blocks Links UID GID Access         Change         Modify         Path\n");
-	printf("%-5d %-4ld %-10d %-6ld %-5ld %-3d %-3d %-7d %d-%d-%d %d:%d %d-%d-%d %d:%d %d-%d-%d %d:%d %s\n",
-			0, st.st_size, st.st_mode, st.st_blocks, st.st_nlink, st.st_uid, st.st_gid,
-			At->tm_year+1900, At->tm_mon+1, At->tm_mday+1, At->tm_hour, At->tm_min,
-			Ct->tm_year+1900, Ct->tm_mon+1, Ct->tm_mday+1, Ct->tm_hour, Ct->tm_min,
-			Mt->tm_year+1900, Mt->tm_mon+1, Mt->tm_mday+1, Mt->tm_hour, Mt->tm_min,
+	
+	time_t at = st.st_atime;
+	time_t ct = st.st_ctime;
+	time_t mt = st.st_mtime;
+	struct tm aT;
+	struct tm cT;
+	struct tm mT;
+
+	localtime_r(&at, &aT);
+	localtime_r(&ct, &cT);
+	localtime_r(&mt, &mT);
+	printf("Index Size Mode       Blocks Links UID  GID  Access       Change       Modify       Path\n");
+
+	printf("%-5d %-4ld %-10s %-6ld %-5ld %-4d %-4d %d-%d-%d %d:%d %d-%d-%d %d:%d %d-%d-%d %d:%d %s\n",
+			0, st.st_size, map_fileType(&st), st.st_blocks, st.st_nlink, st.st_uid, st.st_gid,
+			aT.tm_year+1900-2000, aT.tm_mon+1, aT.tm_mday+1, aT.tm_hour, aT.tm_min,
+			cT.tm_year+1900-2000, cT.tm_mon+1, cT.tm_mday+1, cT.tm_hour, cT.tm_min,
+			mT.tm_year+1900-2000, mT.tm_mon+1, mT.tm_mday+1, mT.tm_hour, mT.tm_min,
 		  	path_FILENAME);
-	for(int i=0; i<j; i++){
-		
+	memset(&st, 0, sizeof(struct stat));
+
+	for(int i=1; i <= j-1; i++){
+		stat(regFileList_Candidate[i], &st);
+		printf("%-5d %-4ld %-10s %-6ld %-5ld %-4d %-4d %d-%d-%d %d:%d %d-%d-%d %d:%d %d-%d-%d %d:%d %s\n",
+			i, st.st_size, map_fileType(&st), st.st_blocks, st.st_nlink, st.st_uid, st.st_gid,
+			aT.tm_year+1900-2000, aT.tm_mon+1, aT.tm_mday+1, aT.tm_hour, aT.tm_min,
+			cT.tm_year+1900-2000, cT.tm_mon+1, cT.tm_mday+1, cT.tm_hour, cT.tm_min,
+			mT.tm_year+1900-2000, mT.tm_mon+1, mT.tm_mday+1, mT.tm_hour, mT.tm_min,
+		  	regFileList_Candidate[i]);
 	}
+	j = 0;
 }
+
+char* map_fileType(struct stat *st){
+	char* accessMode = (char*)malloc(1024);
+	
+	if(S_ISDIR(st->st_mode))
+		strcpy(accessMode, "d");
+	else
+		strcpy(accessMode, "-");
+
+	int mode_o = st->st_mode & S_IRWXO;
+	int mode_g = (st->st_mode >> 3) & S_IRWXO;
+	int mode_u = (st->st_mode >> 6) & S_IRWXO;
+	
+	accessMode = strcat(accessMode, rwx[mode_u]);
+	accessMode = strcat(accessMode, rwx[mode_g]);
+	accessMode = strcat(accessMode, rwx[mode_o]);
+	return accessMode;
+}
+
+
 
 void print_dirFileList(){
 
