@@ -23,14 +23,14 @@ int get_dirSize(char* path);
 
 char* regFileList_Candidate[1024];
 char* dirFileList_Candidate[1024];
-char* pathSet[1024];
-char* d_pathSet[1024];
-char* ds_pathSet[1024];
-int j;
-int k;
-int t;
-int d;
-int w;
+char* pathSet[1024]; // check regular file
+char* d_pathSet[1024]; // check directory
+char* ds_pathSet[1024]; // check directory size
+int j; // regFileList_Candidate[j]
+int k; // pathSet[k]
+int t; // dirFileList_Candidate[t]
+int d; // d_pathSet[d]
+int w; // ds_pathSet[w]
 char* rwx[8] = {"---", "--x", "-w-", "-wx", "r--", "r-x", "rw-", "rwx"};
 
 int main(int argc, char** argv){
@@ -41,6 +41,7 @@ int main(int argc, char** argv){
 		*(regFileList_Candidate + i) = (char*)malloc(1024);
 		*(dirFileList_Candidate + i) = (char*)malloc(1024);
 		*(ds_pathSet + i) = (char*)malloc(1024);
+		*(d_pathSet + i) = (char*)malloc(1024);
 	}
 
 	while(1){		
@@ -98,12 +99,12 @@ int main(int argc, char** argv){
 								regFile_Recursive(parsedInput[1], st.st_size, realPath);
 							}
 							if(S_ISDIR(st.st_mode)){
-								printf("DEBUG 0\n");
-								dirFile_Recursive(parsedInput[1], get_dirSize(FILENAME_realpath), realPath);
+								printf("FILENAME_realpath : %s\n", FILENAME_realpath);
+								printf("FILENAME's size(dir) : %d\n", get_dirSize(FILENAME_realpath));
+								dirFile_Recursive(FILENAME_realpath, get_dirSize(FILENAME_realpath), realPath);
+								w = 0;
 							}
-//							memset(&st, 0, sizeof(struct stat));
 						}
-						
 					}
 					else{ // if [PATH] is real path
 						realPath = parsedInput[2];
@@ -111,9 +112,9 @@ int main(int argc, char** argv){
 							regFile_Recursive(parsedInput[1], st.st_size, realPath);
 						}
 						if(S_ISDIR(st.st_mode)){
-							dirFile_Recursive(parsedInput[1], get_dirSize(FILENAME_realpath), realPath);
+							dirFile_Recursive(FILENAME_realpath, get_dirSize(FILENAME_realpath), realPath);
+							w = 0;
 						}
-//						memset(&st, 0, sizeof(struct stat));
 					}
 					realPath = NULL;
 				}	
@@ -254,6 +255,9 @@ void regFile_Recursive(char* FILENAME, int FILESIZE, char* path){ // target file
 	int fileCount = scandir(path, &namelist, NULL, alphasort);
 	char* FILETYPE = get_fileType(&st);
 	int DIRCOUNT = 0;
+	char* extracted_RegFileName = (char*)malloc(1024);
+	extracted_RegFileName = strrchr(FILENAME, '/');
+	extracted_RegFileName++;
 
 	/*** get Directory file count ***/
 	printf("Traversing ..\n");
@@ -264,13 +268,10 @@ void regFile_Recursive(char* FILENAME, int FILESIZE, char* path){ // target file
 		strcat(tmp_path, slash);
 		strcat(tmp_path, namelist[i]->d_name);
 		stat(tmp_path, &st);
-		printf("tmp_path : %s\n", tmp_path);
 		free(tmp_path);
 		if(S_ISREG(st.st_mode)){
-			printf("type : %s\n", "regular");
 		}
 		if(S_ISDIR(st.st_mode)){
-			printf("type : %s\n", "directory");
 			DIRCOUNT++;
 		}
 	}
@@ -288,7 +289,7 @@ void regFile_Recursive(char* FILENAME, int FILESIZE, char* path){ // target file
 			free(tmp_path);
 			
 			int fileCount1 = scandir(pathSet[k], &namelist, NULL, alphasort);
-			if( (strcmp(FILENAME, namelist[i]->d_name) == 0) && (st.st_size == FILESIZE) ){
+			if( (strcmp(extracted_RegFileName, namelist[i]->d_name) == 0) && (st.st_size == FILESIZE) ){
 				strcpy(regFileList_Candidate[j++], pathSet[k]);
 				k++;
 				printf("regFileList[%d] : %s\n", j-1, regFileList_Candidate[j-1]);
@@ -306,7 +307,10 @@ void regFile_Recursive(char* FILENAME, int FILESIZE, char* path){ // target file
 			strcat(tmp_path, namelist[i]->d_name);
 			pathSet[k] = tmp_path;
 			stat(pathSet[k], &st);
-			printf("real path : %s\n", tmp_path);
+			if(i==0 || i==1){}
+			else{
+				printf("real path : %s\n", tmp_path);
+			}
 
 			if(S_ISDIR(st.st_mode)){
 				if(strcmp(namelist[i]->d_name, ".") == 0 || strcmp(namelist[i]->d_name, "..") == 0 ){}
@@ -318,7 +322,7 @@ void regFile_Recursive(char* FILENAME, int FILESIZE, char* path){ // target file
 				}
 			}
 			else {
-				if( (strcmp(FILENAME, namelist[i]->d_name) == 0) && (st.st_size == FILESIZE)){
+				if( (strcmp(extracted_RegFileName, namelist[i]->d_name) == 0) && (st.st_size == FILESIZE)){
 					strcpy(regFileList_Candidate[j++], pathSet[k]);
 					printf("regFileList[%d] : %s\n", j-1, regFileList_Candidate[j-1]);
 					k++;
@@ -359,7 +363,6 @@ void print_regFileList(char* path_FILENAME){
 	for(int i=1; i<=j-1; i++){
 		printf("regFileList_Candidate[%d] : %s\n", i, regFileList_Candidate[i]);
 	}
-
 
 	printf("Index Size Mode       Blocks Links UID  GID  Access       Change       Modify       Path\n");
 
@@ -424,6 +427,9 @@ void dirFile_Recursive(char* FILENAME, int FILESIZE, char* path){
 	struct stat st;
 	int fileCount = scandir(path, &namelist, NULL, alphasort);
 	int DIRCOUNT = 0;
+	char* extracted_DirFileName = (char*)malloc(1024);
+	extracted_DirFileName =strrchr(FILENAME, '/');
+	extracted_DirFileName++;
 
 	/*** get Directory file count ***/
 	for(int i=0; i<fileCount; i++){
@@ -433,13 +439,9 @@ void dirFile_Recursive(char* FILENAME, int FILESIZE, char* path){
 		strcat(tmp_path, slash);
 		strcat(tmp_path, namelist[i]->d_name);
 		stat(tmp_path, &st);
-		printf("tmp_path : %s\n", tmp_path);
 		free(tmp_path);
-		if(S_ISREG(st.st_mode)){
-			printf("type : %s\n", "regular");
-		}
+		if(S_ISREG(st.st_mode)){}
 		if(S_ISDIR(st.st_mode)){
-			printf("type : %s\n", "directory");
 			DIRCOUNT++;
 		}
 	}
@@ -451,14 +453,17 @@ void dirFile_Recursive(char* FILENAME, int FILESIZE, char* path){
 			strcpy(tmp_path, path);
 			strcat(tmp_path, slash);
 			strcat(tmp_path, namelist[i]->d_name);
-			d_pathSet[d] = tmp_path;
+			strcpy(d_pathSet[d], tmp_path);			
 			stat(d_pathSet[d], &st);
 			free(tmp_path);
-
 			int fileCount1 = scandir(d_pathSet[d], &namelist, NULL, alphasort);
-			if( (strcmp(FILENAME, namelist[i]->d_name) == 0) && (st.st_size == FILESIZE) ) {
+			
+			if( (strcmp(extracted_DirFileName, namelist[i]->d_name) == 0) && (get_dirSize(d_pathSet[d]) == FILESIZE) ) {
+				w = 0;
 				strcpy(dirFileList_Candidate[t++], d_pathSet[d]);
+			//	printf("dirFileList_Candidate : %s\n", dirFileList_Candidate[t-1]);
 				d++;
+				free(extracted_DirFileName);
 				return;
 			}
 		}
@@ -470,26 +475,42 @@ void dirFile_Recursive(char* FILENAME, int FILESIZE, char* path){
 			strcpy(tmp_path, path);
 			strcat(tmp_path, slash);
 			strcat(tmp_path, namelist[i]->d_name);
-			d_pathSet[d] = tmp_path;
+			strcpy(d_pathSet[d], tmp_path);			
 			stat(d_pathSet[d], &st);
-			printf("real path : %s\n", tmp_path);
+			if(i==0 || i==1){}
+			else{
+				printf("real path : %s\n", tmp_path);
+				if(S_ISDIR(st.st_mode)){
+					if(i==0 || i==1){}
+					else{
+//						printf("%s Size : %d\n", d_pathSet[d], get_dirSize(d_pathSet[d]));
+					}
+				}
+			}
+			free(tmp_path);
 
 			if(S_ISDIR(st.st_mode)){
 				if(strcmp(namelist[i]->d_name, ".") == 0 || strcmp(namelist[i]->d_name, "..") == 0){}
 				else if(strcmp(namelist[i]->d_name, "proc") == 0 || strcmp(namelist[i]->d_name, "run") == 0 || strcmp(namelist[i]->d_name, "snap") == 0){}
 				else if(strcmp(namelist[i]->d_name, "bin") == 0 || strcmp(namelist[i]->d_name, "sys") == 0 || strcmp(namelist[i]->d_name, "opt") == 0){}
 				else{
-					printf("Recursive !!!\n\n");
-					dirFile_Recursive(FILENAME, FILESIZE, tmp_path);
+					if( (strcmp(extracted_DirFileName, namelist[i]->d_name) == 0) && (get_dirSize(d_pathSet[d]) == FILESIZE) ){////////////////////////////////
+						w = 0;
+						strcpy(dirFileList_Candidate[t++], d_pathSet[d]);
+			//			printf("dirFileList_Candidate : %s\n", dirFileList_Candidate[t-1]);
+					}
+			//		printf("Recursive !!!\n\n");
+					dirFile_Recursive(FILENAME, FILESIZE, d_pathSet[d++]);
 				}
 			}
 			else{
-				if( (strcmp(FILENAME, namelist[i]->d_name) == 0) && (st.st_size == FILESIZE) ){
+				if( (strcmp(extracted_DirFileName, namelist[i]->d_name) == 0) && (get_dirSize(d_pathSet[d]) == FILESIZE) ){////////////////////////////////
+					w = 0;
 					strcpy(dirFileList_Candidate[t++], d_pathSet[d]);
+			//		printf("dirFileList_Candidate : %s\n", dirFileList_Candidate[t-1]);
 					d++;
 				}
 			}
-			free(tmp_path);
 		}
 	}
 }
@@ -508,14 +529,16 @@ void print_dirFileList(char* path_FILENAME){
 	localtime_r(&ct, &cT);
 	localtime_r(&mt, &mT);
 
-	for(int r=0; r<t-1; r++){
-		for(int i=t-1; i >= 1; i--){
-			char* tmp= (char*)malloc(1024);
-			if(strlen(dirFileList_Candidate[i+1]) < strlen(dirFileList_Candidate[i])){
-				strcpy(tmp, dirFileList_Candidate[i]);
-				strcpy(dirFileList_Candidate[i], dirFileList_Candidate[i+1]);
-				strcpy(dirFileList_Candidate[i+1], tmp);
-				free(tmp);
+	if(t>2){
+		for(int r=0; r<t-1; r++){
+			for(int i=t-1; i >= 1; i--){
+				char* tmp= (char*)malloc(1024);
+				if(strlen(dirFileList_Candidate[i+1]) < strlen(dirFileList_Candidate[i])){
+					strcpy(tmp, dirFileList_Candidate[i]);
+					strcpy(dirFileList_Candidate[i], dirFileList_Candidate[i+1]);
+					strcpy(dirFileList_Candidate[i+1], tmp);
+					free(tmp);
+				}
 			}
 		}
 	}
@@ -528,10 +551,11 @@ void print_dirFileList(char* path_FILENAME){
 			mT.tm_year+1900-2000, mT.tm_mon+1, mT.tm_mday+1, mT.tm_hour, mT.tm_min,
 		  	path_FILENAME);
 	memset(&st, 0, sizeof(struct stat));
-
+	w = 0;
 	for(int i=1; i <= t-1; i++){
 		struct stat st2;
 		char* tmpdir = (char*)malloc(1024);
+//		printf("dirFileList_Candidate[%d] : %s\n", i, dirFileList_Candidate[i]);
 		strcpy(tmpdir, dirFileList_Candidate[i]);
 		stat(tmpdir, &st2);
 
@@ -551,17 +575,16 @@ void print_dirFileList(char* path_FILENAME){
 			cT.tm_year+1900-2000, cT.tm_mon+1, cT.tm_mday+1, cT.tm_hour, cT.tm_min,
 			mT.tm_year+1900-2000, mT.tm_mon+1, mT.tm_mday+1, mT.tm_hour, mT.tm_min,
 		  	dirFileList_Candidate[i]);
+		w = 0;
 		memset(&st2, 0, sizeof(struct stat));
 		free(tmpdir);
 	}
-	t = 0;
 }
 
 int get_dirSize(char* path){
 	int sum = 0;
 	struct dirent** namelist = NULL;
-	int fileCount = scandir(path, &namelist, NULL, alphasort); // except . and ..
-	printf("fileCount : %d\n", fileCount);	
+	int fileCount = scandir(path, &namelist, NULL, alphasort);
 	for(int i=0; i<fileCount; i++){
 		struct stat st;
 		char* slash = "/";
@@ -573,9 +596,8 @@ int get_dirSize(char* path){
 		strcpy(ds_pathSet[w], tmp_path);
 		free(tmp_path);
 
-		if(strcmp(namelist[i]->d_name, ".") == 0 || strcmp(namelist[i]->d_name, "..") == 0){}
+		if(strcmp(namelist[i]->d_name, ".") == 0 || strcmp(namelist[i]->d_name, "..") == 0){} // except . and ..
 		else if(S_ISREG(st.st_mode)){
-			printf("namelist[%d] (%s) size : %ld\n", i, namelist[i]->d_name, st.st_size);
 			sum += st.st_size;
 		}
 		else if(S_ISDIR(st.st_mode)){
