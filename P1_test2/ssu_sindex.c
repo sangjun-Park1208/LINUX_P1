@@ -347,30 +347,22 @@ void print_regFileList(char* path_FILENAME){
 	localtime_r(&at, &aT);
 	localtime_r(&ct, &cT);
 	localtime_r(&mt, &mT);
-	printf("j : %d\n", j); // 7
 
-	printf("<<before sorting>>\n");
-	for(int i=1; i<=j-1; i++){
-		printf("regFileList_Candidate[%d] : %s\n", i, regFileList_Candidate[i]);
-	}
-
-	for(int s=j-1; s>0; s--){ // loop count : 6
-		for(int i=1; i <= s-1; i++){
-			char* tmp = (char*)malloc(1024);
-			if(strlen(regFileList_Candidate[i]) > strlen(regFileList_Candidate[i+1])){
-				strcpy(tmp, regFileList_Candidate[i]);
-				strcpy(regFileList_Candidate[i], regFileList_Candidate[i+1]);
-				strcpy(regFileList_Candidate[i+1], tmp);
-				free(tmp);
+	if(j>2){}
+	else{
+		for(int s=j-1; s>0; s--){ // loop count : 6
+			for(int i=1; i <= s-1; i++){
+				char* tmp = (char*)malloc(1024);
+				if(strlen(regFileList_Candidate[i]) > strlen(regFileList_Candidate[i+1])){
+					strcpy(tmp, regFileList_Candidate[i]);
+					strcpy(regFileList_Candidate[i], regFileList_Candidate[i+1]);
+					strcpy(regFileList_Candidate[i+1], tmp);
+					free(tmp);
+				}
 			}
 		}
 	}
 	
-	printf("<<after sorting>>\n");
-	for(int i=1; i<=j-1; i++){
-		printf("regFileList_Candidate[%d] : %s\n", i, regFileList_Candidate[i]);
-	}
-
 	printf("Index Size Mode       Blocks Links UID  GID  Access       Change       Modify       Path\n");
 
 	printf("%-5d %-4ld %-10s %-6ld %-5ld %-4d %-4d %d-%d-%d %d:%d %d-%d-%d %d:%d %d-%d-%d %d:%d %s\n",
@@ -537,8 +529,8 @@ void print_dirFileList(char* path_FILENAME){
 	localtime_r(&mt, &mT);
 
 	if(t>2){
-		for(int r=0; r<t-1; r++){
-			for(int i=t-1; i >= 1; i--){
+		for(int r=t-1; r>0; r--){
+			for(int i=1; i <= r-1; i++){
 				char* tmp= (char*)malloc(1024);
 				if(strlen(dirFileList_Candidate[i+1]) < strlen(dirFileList_Candidate[i])){
 					strcpy(tmp, dirFileList_Candidate[i]);
