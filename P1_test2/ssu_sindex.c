@@ -560,8 +560,8 @@ void print_dirFileList(char* path_FILENAME){
 int get_dirSize(char* path){
 	int sum = 0;
 	struct dirent** namelist = NULL;
-	int fileCount = scandir(path, &namelist, NULL, alphasort) - 2; // except . and ..
-	
+	int fileCount = scandir(path, &namelist, NULL, alphasort); // except . and ..
+	printf("fileCount : %d\n", fileCount);	
 	for(int i=0; i<fileCount; i++){
 		struct stat st;
 		char* slash = "/";
@@ -575,10 +575,11 @@ int get_dirSize(char* path){
 
 		if(strcmp(namelist[i]->d_name, ".") == 0 || strcmp(namelist[i]->d_name, "..") == 0){}
 		else if(S_ISREG(st.st_mode)){
+			printf("namelist[%d] (%s) size : %ld\n", i, namelist[i]->d_name, st.st_size);
 			sum += st.st_size;
 		}
 		else if(S_ISDIR(st.st_mode)){
-			sum = get_dirSize(ds_pathSet[w++]);
+			sum += get_dirSize(ds_pathSet[w++]);
 		}
 	}
 	return sum;
