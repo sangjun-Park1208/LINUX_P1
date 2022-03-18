@@ -133,6 +133,7 @@ int main(int argc, char** argv){
 				FILENAME_realpath = NULL;
 				k = 0;
 				w = 0;
+				t = 0;
 				break;
 	
 			case 1: // "exit"
@@ -260,7 +261,6 @@ void regFile_Recursive(char* FILENAME, int FILESIZE, char* path){ // target file
 	extracted_RegFileName++;
 
 	/*** get Directory file count ***/
-	printf("Traversing ..\n");
 	for(int i=0; i<fileCount; i++){
 		char* slash = "/";
 		char* tmp_path = (char*)malloc(1024);
@@ -277,7 +277,6 @@ void regFile_Recursive(char* FILENAME, int FILESIZE, char* path){ // target file
 	}
 	
 	if(DIRCOUNT == 0){ // if there is no directory
-		printf("No DIR file.\n");
 		for(int i=0; i<fileCount; i++){ // visit all files.
 			char* slash = "/";
 			char* tmp_path = (char*)malloc(1024);
@@ -292,7 +291,6 @@ void regFile_Recursive(char* FILENAME, int FILESIZE, char* path){ // target file
 			if( (strcmp(extracted_RegFileName, namelist[i]->d_name) == 0) && (st.st_size == FILESIZE) ){
 				strcpy(regFileList_Candidate[j++], pathSet[k]);
 				k++;
-				printf("regFileList[%d] : %s\n", j-1, regFileList_Candidate[j-1]);
 				return;
 			}
 
@@ -317,14 +315,12 @@ void regFile_Recursive(char* FILENAME, int FILESIZE, char* path){ // target file
 				else if(strcmp(namelist[i]->d_name, "proc") == 0 || strcmp(namelist[i]->d_name, "run") == 0 || strcmp(namelist[i]->d_name, "snap") == 0){}
 				else if(strcmp(namelist[i]->d_name, "bin") == 0 || strcmp(namelist[i]->d_name, "sys") == 0 || strcmp(namelist[i]->d_name, "opt") == 0){}
 				else{
-					printf("Recursive!!!!!\n\n");
 					regFile_Recursive(FILENAME, FILESIZE, tmp_path);
 				}
 			}
 			else {
 				if( (strcmp(extracted_RegFileName, namelist[i]->d_name) == 0) && (st.st_size == FILESIZE)){
 					strcpy(regFileList_Candidate[j++], pathSet[k]);
-					printf("regFileList[%d] : %s\n", j-1, regFileList_Candidate[j-1]);
 					k++;
 				}
 			}
@@ -363,9 +359,9 @@ void print_regFileList(char* path_FILENAME){
 		}
 	}
 	
-	printf("Index Size Mode       Blocks Links UID  GID  Access       Change       Modify       Path\n");
+	printf("Index Size Mode       Blocks Links UID  GID  Access         Change         Modify         Path\n");
 
-	printf("%-5d %-4ld %-10s %-6ld %-5ld %-4d %-4d %d-%d-%d %d:%d %d-%d-%d %d:%d %d-%d-%d %d:%d %s\n",
+	printf("%-5d %-4ld %-10s %-6ld %-5ld %-4d %-4d %d-%02d-%02d %02d:%02d %d-%02d-%02d %02d:%02d %d-%02d-%02d %02d:%02d %s\n",
 			0, st.st_size, map_fileType(&st), st.st_blocks, st.st_nlink, st.st_uid, st.st_gid,
 			aT.tm_year+1900-2000, aT.tm_mon+1, aT.tm_mday+1, aT.tm_hour, aT.tm_min,
 			cT.tm_year+1900-2000, cT.tm_mon+1, cT.tm_mday+1, cT.tm_hour, cT.tm_min,
@@ -390,7 +386,7 @@ void print_regFileList(char* path_FILENAME){
 		localtime_r(&ct, &cT);
 		localtime_r(&mt, &mT);
 	
-		printf("%-5d %-4ld %-10s %-6ld %-5ld %-4d %-4d %d-%d-%d %d:%d %d-%d-%d %d:%d %d-%d-%d %d:%d %s\n",
+		printf("%-5d %-4ld %-10s %-6ld %-5ld %-4d %-4d %d-%02d-%02d %02d:%02d %d-%02d-%02d %02d:%02d %d-%02d-%02d %02d:%02d %s\n",
 			i, st1.st_size, map_fileType(&st1), st1.st_blocks, st1.st_nlink, st1.st_uid, st1.st_gid,
 			aT.tm_year+1900-2000, aT.tm_mon+1, aT.tm_mday+1, aT.tm_hour, aT.tm_min,
 			cT.tm_year+1900-2000, cT.tm_mon+1, cT.tm_mday+1, cT.tm_hour, cT.tm_min,
@@ -428,6 +424,8 @@ void dirFile_Recursive(char* FILENAME, int FILESIZE, char* path){
 	int DIRCOUNT = 0;
 	char* extracted_DirFileName = (char*)malloc(1024);
 	extracted_DirFileName =strrchr(FILENAME, '/');
+//	char* temp = (char*)malloc(1024);
+//	temp = extracted_DirFileName;
 	extracted_DirFileName++;
 
 	/*** get Directory file count ***/
@@ -460,9 +458,10 @@ void dirFile_Recursive(char* FILENAME, int FILESIZE, char* path){
 			if( (strcmp(extracted_DirFileName, namelist[i]->d_name) == 0) && (get_dirSize(d_pathSet[d]) == FILESIZE) ) {
 				w = 0;
 				strcpy(dirFileList_Candidate[t++], d_pathSet[d]);
-			//	printf("dirFileList_Candidate : %s\n", dirFileList_Candidate[t-1]);
 				d++;
-				free(extracted_DirFileName);
+//				extracted_DirFileName = temp;
+//				free(extracted_DirFileName);
+//				free(temp);
 				return;
 			}
 		}
@@ -479,12 +478,6 @@ void dirFile_Recursive(char* FILENAME, int FILESIZE, char* path){
 			if(i==0 || i==1){}
 			else{
 				printf("real path : %s\n", tmp_path);
-				if(S_ISDIR(st.st_mode)){
-					if(i==0 || i==1){}
-					else{
-//						printf("%s Size : %d\n", d_pathSet[d], get_dirSize(d_pathSet[d]));
-					}
-				}
 			}
 			free(tmp_path);
 
@@ -493,22 +486,24 @@ void dirFile_Recursive(char* FILENAME, int FILESIZE, char* path){
 				else if(strcmp(namelist[i]->d_name, "proc") == 0 || strcmp(namelist[i]->d_name, "run") == 0 || strcmp(namelist[i]->d_name, "snap") == 0){}
 				else if(strcmp(namelist[i]->d_name, "bin") == 0 || strcmp(namelist[i]->d_name, "sys") == 0 || strcmp(namelist[i]->d_name, "opt") == 0){}
 				else{
-					if( (strcmp(extracted_DirFileName, namelist[i]->d_name) == 0) && (get_dirSize(d_pathSet[d]) == FILESIZE) ){////////////////////////////////
+					if( (strcmp(extracted_DirFileName, namelist[i]->d_name) == 0) && (get_dirSize(d_pathSet[d]) == FILESIZE) ){
 						w = 0;
 						strcpy(dirFileList_Candidate[t++], d_pathSet[d]);
-			//			printf("dirFileList_Candidate : %s\n", dirFileList_Candidate[t-1]);
+//						extracted_DirFileName = temp;
+//						free(extracted_DirFileName);
+//						free(temp);
 					}
-			//		printf("Recursive !!!\n\n");
 					dirFile_Recursive(FILENAME, FILESIZE, d_pathSet[d++]);
 				}
 			}
 			else{
-				if( (strcmp(extracted_DirFileName, namelist[i]->d_name) == 0) && (get_dirSize(d_pathSet[d]) == FILESIZE) ){////////////////////////////////
+				/*
+				if( (strcmp(extracted_DirFileName, namelist[i]->d_name) == 0) && (get_dirSize(d_pathSet[d]) == FILESIZE) ){
 					w = 0;
 					strcpy(dirFileList_Candidate[t++], d_pathSet[d]);
-			//		printf("dirFileList_Candidate : %s\n", dirFileList_Candidate[t-1]);
 					d++;
 				}
+				*/
 			}
 		}
 	}
@@ -541,9 +536,9 @@ void print_dirFileList(char* path_FILENAME){
 			}
 		}
 	}
-	printf("Index Size Mode       Blocks Links UID  GID  Access       Change       Modify       Path\n");
+	printf("Index Size Mode       Blocks Links UID  GID  Access         Change         Modify         Path\n");
 
-	printf("%-5d %-4d %-10s %-6ld %-5ld %-4d %-4d %d-%d-%d %d:%d %d-%d-%d %d:%d %d-%d-%d %d:%d %s\n",
+	printf("%-5d %-4d %-10s %-6ld %-5ld %-4d %-4d %d-%02d-%02d %02d:%02d %d-%02d-%02d %02d:%02d %d-%02d-%02d %02d:%02d %s\n",
 			0, get_dirSize(path_FILENAME), map_fileType(&st), st.st_blocks, st.st_nlink, st.st_uid, st.st_gid,
 			aT.tm_year+1900-2000, aT.tm_mon+1, aT.tm_mday+1, aT.tm_hour, aT.tm_min,
 			cT.tm_year+1900-2000, cT.tm_mon+1, cT.tm_mday+1, cT.tm_hour, cT.tm_min,
@@ -554,7 +549,6 @@ void print_dirFileList(char* path_FILENAME){
 	for(int i=1; i <= t-1; i++){
 		struct stat st2;
 		char* tmpdir = (char*)malloc(1024);
-//		printf("dirFileList_Candidate[%d] : %s\n", i, dirFileList_Candidate[i]);
 		strcpy(tmpdir, dirFileList_Candidate[i]);
 		stat(tmpdir, &st2);
 
@@ -568,7 +562,7 @@ void print_dirFileList(char* path_FILENAME){
 		localtime_r(&ct, &cT);
 		localtime_r(&mt, &mT);
 
-		printf("%-5d %-4d %-10s %-6ld %-5ld %-4d %-4d %d-%d-%d %d:%d %d-%d-%d %d:%d %d-%d-%d %d:%d %s\n",
+		printf("%-5d %-4d %-10s %-6ld %-5ld %-4d %-4d %d-%02d-%02d %02d:%02d %d-%02d-%02d %02d:%02d %d-%02d-%02d %02d:%02d %s\n",
 			i, get_dirSize(path_FILENAME), map_fileType(&st2), st2.st_blocks, st2.st_nlink, st2.st_uid, st2.st_gid,
 			aT.tm_year+1900-2000, aT.tm_mon+1, aT.tm_mday+1, aT.tm_hour, aT.tm_min,
 			cT.tm_year+1900-2000, cT.tm_mon+1, cT.tm_mday+1, cT.tm_hour, cT.tm_min,
