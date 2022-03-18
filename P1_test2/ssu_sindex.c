@@ -96,7 +96,7 @@ int main(int argc, char** argv){
 						}
 						else{
 							if(S_ISREG(st.st_mode)){
-								regFile_Recursive(parsedInput[1], st.st_size, realPath);
+								regFile_Recursive(FILENAME_realpath, st.st_size, realPath);
 							}
 							if(S_ISDIR(st.st_mode)){
 								printf("FILENAME_realpath : %s\n", FILENAME_realpath);
@@ -109,7 +109,7 @@ int main(int argc, char** argv){
 					else{ // if [PATH] is real path
 						realPath = parsedInput[2];
 						if(S_ISREG(st.st_mode)){
-							regFile_Recursive(parsedInput[1], st.st_size, realPath);
+							regFile_Recursive(FILENAME_realpath, st.st_size, realPath);
 						}
 						if(S_ISDIR(st.st_mode)){
 							dirFile_Recursive(FILENAME_realpath, get_dirSize(FILENAME_realpath), realPath);
@@ -347,11 +347,17 @@ void print_regFileList(char* path_FILENAME){
 	localtime_r(&at, &aT);
 	localtime_r(&ct, &cT);
 	localtime_r(&mt, &mT);
+	printf("j : %d\n", j); // 7
 
-	for(int t=0; t<j-1; t++){
-		for(int i=j-1; i >= 0; i--){
+	printf("<<before sorting>>\n");
+	for(int i=1; i<=j-1; i++){
+		printf("regFileList_Candidate[%d] : %s\n", i, regFileList_Candidate[i]);
+	}
+
+	for(int s=j-1; s>0; s--){ // loop count : 6
+		for(int i=1; i <= s-1; i++){
 			char* tmp = (char*)malloc(1024);
-			if(strlen(regFileList_Candidate[i+1]) < strlen(regFileList_Candidate[i])){
+			if(strlen(regFileList_Candidate[i]) > strlen(regFileList_Candidate[i+1])){
 				strcpy(tmp, regFileList_Candidate[i]);
 				strcpy(regFileList_Candidate[i], regFileList_Candidate[i+1]);
 				strcpy(regFileList_Candidate[i+1], tmp);
@@ -360,6 +366,7 @@ void print_regFileList(char* path_FILENAME){
 		}
 	}
 	
+	printf("<<after sorting>>\n");
 	for(int i=1; i<=j-1; i++){
 		printf("regFileList_Candidate[%d] : %s\n", i, regFileList_Candidate[i]);
 	}
