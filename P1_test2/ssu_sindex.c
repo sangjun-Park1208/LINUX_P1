@@ -344,8 +344,7 @@ void print_regFileList(char* path_FILENAME){
 	localtime_r(&ct, &cT);
 	localtime_r(&mt, &mT);
 
-	if(j>2){}
-	else{
+	if(j>2){
 		for(int s=j-1; s>0; s--){ // loop count : 6
 			for(int i=1; i <= s-1; i++){
 				char* tmp = (char*)malloc(1024);
@@ -424,8 +423,6 @@ void dirFile_Recursive(char* FILENAME, int FILESIZE, char* path){
 	int DIRCOUNT = 0;
 	char* extracted_DirFileName = (char*)malloc(1024);
 	extracted_DirFileName =strrchr(FILENAME, '/');
-//	char* temp = (char*)malloc(1024);
-//	temp = extracted_DirFileName;
 	extracted_DirFileName++;
 
 	/*** get Directory file count ***/
@@ -459,9 +456,6 @@ void dirFile_Recursive(char* FILENAME, int FILESIZE, char* path){
 				w = 0;
 				strcpy(dirFileList_Candidate[t++], d_pathSet[d]);
 				d++;
-//				extracted_DirFileName = temp;
-//				free(extracted_DirFileName);
-//				free(temp);
 				return;
 			}
 		}
@@ -489,21 +483,9 @@ void dirFile_Recursive(char* FILENAME, int FILESIZE, char* path){
 					if( (strcmp(extracted_DirFileName, namelist[i]->d_name) == 0) && (get_dirSize(d_pathSet[d]) == FILESIZE) ){
 						w = 0;
 						strcpy(dirFileList_Candidate[t++], d_pathSet[d]);
-//						extracted_DirFileName = temp;
-//						free(extracted_DirFileName);
-//						free(temp);
 					}
 					dirFile_Recursive(FILENAME, FILESIZE, d_pathSet[d++]);
 				}
-			}
-			else{
-				/*
-				if( (strcmp(extracted_DirFileName, namelist[i]->d_name) == 0) && (get_dirSize(d_pathSet[d]) == FILESIZE) ){
-					w = 0;
-					strcpy(dirFileList_Candidate[t++], d_pathSet[d]);
-					d++;
-				}
-				*/
 			}
 		}
 	}
