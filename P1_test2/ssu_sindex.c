@@ -20,6 +20,8 @@ void debug_fileExist();
 void debug_relativePathError();
 void dirFile_Recursive(char* FILENAME, int FILESIZE, char* path);
 int get_dirSize(char* path);
+void reg_diff(char* regFile_selected, char* option);
+void dir_diff(char* dirFile_selected, char* option);
 
 char* regFileList_Candidate[1024];
 char* dirFileList_Candidate[1024];
@@ -122,11 +124,37 @@ int main(int argc, char** argv){
 					debug_fileExist();
 					break;
 				}				
-				if(S_ISREG(st.st_mode))
-					print_regFileList(FILENAME_realpath);
+				if(S_ISREG(st.st_mode)){ // if regular file
+					print_regFileList(FILENAME_realpath); // print regular file list
+					if(j == 1)
+						break;
+					
+					int reg_index;
+					char* reg_option = (char*)malloc(1024);
+					printf(">> ");
+					scanf("%d %[^\n]", &reg_index, reg_option);
+					reg_diff( regFileList_Candidate[reg_index], reg_option);
+					break;
+				}
 				
-				if(S_ISDIR(st.st_mode))
-					print_dirFileList(FILENAME_realpath);
+				if(S_ISDIR(st.st_mode)){ // if directory file
+					print_dirFileList(FILENAME_realpath); // print directory list
+					if(t == 1){
+						t = 0;
+						break;
+					}
+
+					int dir_index;
+					char* dir_option = (char*)malloc(1024);
+					printf(">> ");
+					scanf("%d %[^\n]", &dir_index, dir_option);
+					dir_diff( dirFileList_Candidate[dir_index], dir_option);
+					for(int i=0; i<t; i++){
+						memset(dirFileList_Candidate[i], '\0', 1024);
+					}
+					t=0;
+					break;
+				}
 				
 				
 				memset(&st, 0, sizeof(struct stat));
@@ -369,6 +397,7 @@ void print_regFileList(char* path_FILENAME){
 	memset(&st, 0, sizeof(struct stat));
 	if(j == 1){
 		printf("(None)\n");
+		return;
 	}
 	for(int i=1; i <= j-1; i++){
 		struct stat st1;
@@ -456,8 +485,7 @@ void dirFile_Recursive(char* FILENAME, int FILESIZE, char* path){
 			
 			if( (strcmp(extracted_DirFileName, namelist[i]->d_name) == 0) && (get_dirSize(d_pathSet[d]) == FILESIZE) ) {
 				w = 0;
-				strcpy(dirFileList_Candidate[t++], d_pathSet[d]);
-				d++;
+				strcpy(dirFileList_Candidate[t++], d_pathSet[d++]);
 				return;
 			}
 		}
@@ -484,7 +512,7 @@ void dirFile_Recursive(char* FILENAME, int FILESIZE, char* path){
 				else{
 					if( (strcmp(extracted_DirFileName, namelist[i]->d_name) == 0) && (get_dirSize(d_pathSet[d]) == FILESIZE) ){
 						w = 0;
-						strcpy(dirFileList_Candidate[t++], d_pathSet[d]);
+						strcpy(dirFileList_Candidate[t++], d_pathSet[d]); //////
 					}
 					dirFile_Recursive(FILENAME, FILESIZE, d_pathSet[d++]);
 				}
@@ -533,6 +561,7 @@ void print_dirFileList(char* path_FILENAME){
 
 	if(t == 1){
 		printf("(None)\n");
+		return;
 	}
 	for(int i=1; i <= t-1; i++){
 		struct stat st2;
@@ -590,9 +619,15 @@ int get_dirSize(char* path){
 
 
 
+void reg_diff(char* regFile_selected, char* option){
+	printf("regfile <%s> selected!\n", regFile_selected);
+	printf("option : %s\n", option);
+}
 
-
-
+void dir_diff(char* dirFile_selected, char* option){
+	printf("directory <%s> selected!\n", dirFile_selected);
+	printf("option : %s\n", option);
+}
 
 
 
