@@ -367,7 +367,9 @@ void print_regFileList(char* path_FILENAME){
 			mT.tm_year+1900-2000, mT.tm_mon+1, mT.tm_mday+1, mT.tm_hour, mT.tm_min,
 		  	path_FILENAME);
 	memset(&st, 0, sizeof(struct stat));
-
+	if(j == 1){
+		printf("(None)\n");
+	}
 	for(int i=1; i <= j-1; i++){
 		struct stat st1;
 		char* tmpreg = (char*)malloc(1024);
@@ -528,6 +530,10 @@ void print_dirFileList(char* path_FILENAME){
 		  	path_FILENAME);
 	memset(&st, 0, sizeof(struct stat));
 	w = 0;
+
+	if(t == 1){
+		printf("(None)\n");
+	}
 	for(int i=1; i <= t-1; i++){
 		struct stat st2;
 		char* tmpdir = (char*)malloc(1024);
