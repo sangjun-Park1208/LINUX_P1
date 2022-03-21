@@ -24,7 +24,6 @@ void dirFile_Recursive(char* FILENAME, int FILESIZE, char* path);
 int get_dirSize(char* path);
 void reg_diff(char* regFile_selected, char* option);
 void dir_diff(char* dirFile_selected, char* option);
-void cmp_regInDir(void);
 int getTotalLine(char* filePath);
 void LCS(char* sourcePath, char* targetPath);
 
@@ -673,7 +672,6 @@ void dir_diff(char* dirFile_selected, char* option){
 					diff_check[diff_num++] = s;
 					printf("diff -%s %s %s\n", option, sourcefile_path, targetfile_path);
 					LCS(sourcefile_path, targetfile_path);
-//					cmp_regInDir();
 					break;
 				}
 				else if(S_ISREG(st_source.st_mode) && S_ISDIR(st_target.st_mode)){
@@ -743,10 +741,6 @@ void dir_diff(char* dirFile_selected, char* option){
 
 }
 
-void cmp_regInDir(){
-	printf("Differ...\n");
-}
-
 int getTotalLine(char* filePath){
 	FILE* fp;
 	int line = 0;
@@ -812,7 +806,7 @@ void LCS(char* sourcePath, char* targetPath){
 		}
 	}
 	
-
+/*
 	for(int i=0; i<row+1; i++){
 		for(int j=0; j<col+1; j++){
 			printf("%d ", table[i][j]);
@@ -827,12 +821,16 @@ void LCS(char* sourcePath, char* targetPath){
 		}
 		printf("\n");
 	}
-	
+*/	
 
 
 	int left_count = 0;
 	int up_count = 0;
-	for(int i=row, j=col, i_before = row, j_before = col; i!=0 && j!=0; ){
+	int i = row;
+	int j = col;
+	int i_before = row;
+	int j_before = col;
+	for(; i!=0 && j!=0; ){
 		
 		if(tmp_table[i][j] != 1){
 			if(table[i][j] == table[i-1][j]){
@@ -874,14 +872,14 @@ void LCS(char* sourcePath, char* targetPath){
 					printf("%d",i_before);
 				}
 				else{
-					printf("%d,%d", i+1, i_before); // 23,24
+					printf("%d,%d", i+1, i_before); 
 				}
-				printf("c"); // c
+				printf("c"); 
 				if((j_before - j) == 1){
 					printf("%d\n", j_before);
 				}
 				else{
-					printf("%d,%d\n", j+1, j_before); // 21,25
+					printf("%d,%d\n", j+1, j_before);
 				}
 				i_before = i;
 				j_before = j;
@@ -895,12 +893,30 @@ void LCS(char* sourcePath, char* targetPath){
 			up_count = 0;
 			left_count = 0;
 		}
-
-
 	}
 
+	if( i==j && i ==0){
+		return;
+	}
+	if(j == 0){
+		if(i > 1){
+			printf("%d,%dd%d\n", i_before - i+1, i, j);
+		}
+		else{
+			printf("%dd%d\n", j, i);
+		}
+	}
 
+	if(i == 0){
+		if(j > 1){
+			printf("%da%d,%d\n", j_before - j, i+1, j_before);
+		}
+		else{
+			printf("%da%d\n", i, j_before);
+		}
 
+	}
+	
 }
 
 
