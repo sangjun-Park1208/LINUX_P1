@@ -22,6 +22,7 @@ void dirFile_Recursive(char* FILENAME, int FILESIZE, char* path);
 int get_dirSize(char* path);
 void reg_diff(char* regFile_selected, char* option);
 void dir_diff(char* dirFile_selected, char* option);
+void cmp_regInDir(void);
 
 char* regFileList_Candidate[1024];
 char* dirFileList_Candidate[1024];
@@ -146,6 +147,11 @@ int main(int argc, char** argv){
 
 					int dir_index;
 					char* dir_option = (char*)malloc(1024);
+
+
+//					printf("regFileList_Candidate[0] : %s\n", regFileList_Candidate[0]); // NULL
+
+
 					printf(">> ");
 					scanf("%d %[^\n]", &dir_index, dir_option);
 					dir_diff( dirFileList_Candidate[dir_index], dir_option);
@@ -451,10 +457,10 @@ void dirFile_Recursive(char* FILENAME, int FILESIZE, char* path){
 	struct dirent** namelist = NULL;
 	struct stat st;
 	int fileCount = scandir(path, &namelist, NULL, alphasort);
-	int DIRCOUNT = 0;
 	char* extracted_DirFileName = (char*)malloc(1024);
 	extracted_DirFileName =strrchr(FILENAME, '/');
 	extracted_DirFileName++;
+	int DIRCOUNT = 0;
 
 	/*** get Directory file count ***/
 	for(int i=0; i<fileCount; i++){
@@ -627,18 +633,107 @@ void reg_diff(char* regFile_selected, char* option){
 void dir_diff(char* dirFile_selected, char* option){
 	printf("directory <%s> selected!\n", dirFile_selected);
 	printf("option : %s\n", option);
+
+	struct dirent** source_namelist = NULL;
+	struct dirent** target_namelist = NULL;
+
+//	printf("dirFileList_Candidate : %s\n", dirFileList_Candidate[0]);
+	int source_filecount = scandir(dirFileList_Candidate[0], &source_namelist, NULL, alphasort);
+	int target_filecount = scandir(dirFile_selected, &target_namelist, NULL, alphasort);
+	struct stat st_source;
+	struct stat st_target;
+	
+	char* sourcefile_path = (char*)malloc(1024);
+	char* targetfile_path = (char*)malloc(1024);
+	char* slash = "/";
+
+	int source_only = 0; // check if only in source file
+	for(int i=2; i<source_filecount; i++){
+		strcpy(sourcefile_path, dirFileList_Candidate[0]);
+		strcat(sourcefile_path, slash);
+		strcat(sourcefile_path, source_namelist[i]->d_name);
+//		printf("sourcefile_path : %s\n", sourcefile_path);
+		stat(sourcefile_path, &st_source);
+		
+		for(int s=2; s<target_filecount; s++){
+			strcpy(targetfile_path, dirFile_selected);
+			strcat(targetfile_path, slash);
+			strcat(targetfile_path, target_namelist[s]->d_name);
+//			printf("targetfile_path : %s\n", targetfile_path);
+			stat(targetfile_path, &st_target);
+
+			if(strcmp(source_namelist[i]->d_name, target_namelist[s]->d_name) == 0){
+				source_only = 1;
+				if(S_ISREG(st_source.st_mode) && S_ISREG(st_target.st_mode)){
+					cmp_regInDir();
+					break;
+					//reg_diff();
+				}
+				else if(S_ISREG(st_source.st_mode) && S_ISDIR(st_target.st_mode)){
+					printf("File %s is a regular file while file %s is a directory\n", sourcefile_path, targetfile_path);
+				}
+				else if(S_ISDIR(st_source.st_mode) && S_ISREG(st_target.st_mode)){
+					printf("File %s is a directory while file %s is a regular file\n", sourcefile_path, targetfile_path);
+				}
+				else{ // both are directories
+					printf("Common subdirectories : %s and %s\n", sourcefile_path, targetfile_path);
+				}
+			}
+			else{
+//				printf("Not same..\n");
+			}
+		}
+		if(source_only == 0){
+			printf("Only in %s : %s\n", dirFileList_Candidate[0], source_namelist[i]->d_name);
+		}
+		source_only = 0;
+	}
+
+	// MUST!! Initialize sourcefile_path & targetfile_path
+	free(sourcefile_path);
+	free(targetfile_path);
+	sourcefile_path = (char*)malloc(1024);
+	targetfile_path = (char*)malloc(1024);
+
+	int target_only = 0;
+	for(int i=2; i<target_filecount; i++){
+		strcpy(targetfile_path, dirFile_selected);
+		strcat(targetfile_path, slash);
+		strcat(targetfile_path, target_namelist[i]->d_name);
+		stat(targetfile_path, &st_target);
+		
+		for(int s=2; s<source_filecount; s++){
+			strcpy(sourcefile_path, dirFileList_Candidate[0]);
+			strcat(sourcefile_path, slash);
+			strcat(sourcefile_path, source_namelist[s]->d_name);
+			stat(sourcefile_path, &st_source);
+
+			if(strcmp(target_namelist[i]->d_name, source_namelist[s]->d_name) == 0){
+				target_only = 1;
+				if(S_ISREG(st_target.st_mode) && S_ISREG(st_source.st_mode)){
+					cmp_regInDir();
+				}
+				else if(S_ISREG(st_target.st_mode) && S_ISDIR(st_source.st_mode)){
+					printf("File %s is a directory while file %s is a regular file\n", sourcefile_path, targetfile_path);
+				}
+				else if(S_ISDIR(st_target.st_mode) && S_ISREG(st_source.st_mode)){
+					printf("File %s is a regular file while file %s is a directory\n", sourcefile_path, targetfile_path);
+				}
+			}
+		}
+		if(target_only == 0){
+			printf("Only in %s : %s\n", dirFile_selected, target_namelist[i]->d_name);
+		}
+		target_only = 0;
+		
+	}
+
+
 }
 
-
-
-
-
-
-
-
-
-
-
+void cmp_regInDir(){
+	printf("Differ...\n");
+}
 
 
 
