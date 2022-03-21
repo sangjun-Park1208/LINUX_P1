@@ -25,6 +25,8 @@ int get_dirSize(char* path);
 void reg_diff(char* regFile_selected, char* option);
 void dir_diff(char* dirFile_selected, char* option);
 void cmp_regInDir(void);
+int getTotalLine(char* filePath);
+void LCS(char* sourcePath, char* targetPath);
 
 char* regFileList_Candidate[1024];
 char* dirFileList_Candidate[1024];
@@ -670,7 +672,8 @@ void dir_diff(char* dirFile_selected, char* option){
 				if(S_ISREG(st_source.st_mode) && S_ISREG(st_target.st_mode)){
 					diff_check[diff_num++] = s;
 					printf("diff -%s %s %s\n", option, sourcefile_path, targetfile_path);
-					cmp_regInDir();
+					LCS(sourcefile_path, targetfile_path);
+//					cmp_regInDir();
 					break;
 				}
 				else if(S_ISREG(st_source.st_mode) && S_ISDIR(st_target.st_mode)){
@@ -719,7 +722,7 @@ void dir_diff(char* dirFile_selected, char* option){
 					if(diff_check[diff_num] == s){} // exclude overlab with above for loop
 					else{
 						printf("diff -%s %s %s\n", option, sourcefile_path, targetfile_path);
-						cmp_regInDir();
+						LCS(sourcefile_path, targetfile_path);
 					}
 				}
 				else if(S_ISREG(st_target.st_mode) && S_ISDIR(st_source.st_mode)){
@@ -743,6 +746,214 @@ void dir_diff(char* dirFile_selected, char* option){
 void cmp_regInDir(){
 	printf("Differ...\n");
 }
+
+int getTotalLine(char* filePath){
+	FILE* fp;
+	int line = 0;
+	char c;
+	fp = fopen(filePath, "r");
+	while( (c = fgetc(fp) ) != EOF){
+		if(c == '\n')
+			line++;
+	}
+	fclose(fp);
+	return line;
+}
+
+void LCS(char* sourcePath, char* targetPath){
+	FILE* fp_source; 
+	FILE* fp_target;
+	fp_source = fopen(sourcePath, "r");
+	fp_target = fopen(targetPath, "r");
+	int sr_LineCount = getTotalLine(sourcePath);
+	int tg_LineCount = getTotalLine(targetPath);
+	
+	int row = sr_LineCount + 1;
+	int col = tg_LineCount + 1;
+
+	int** table = (int**)malloc(sizeof(int*) * (row+1));
+	int** tmp_table = (int**)malloc(sizeof(int*) * (row+1));
+	
+	for(int i=0; i<row+1; i++){
+		table[i] = (int*)malloc(sizeof(int) * (col+1));
+		tmp_table[i] = (int*)malloc(sizeof(int) * (col+1));
+	}
+
+	for(int i=0; i<row+1; i++){
+		for(int j=0; j<col+1; j++){
+			table[i][j] = 0;
+			tmp_table[i][j] = 0;
+		}
+	}
+	
+	char* sr_line = (char*)malloc(1024);
+	char* tg_line = (char*)malloc(1024);
+
+	for(int i=1; i<row+1; i++){
+		fgets(sr_line, 1024, fp_source);
+		for(int j=1; j<col+1; j++){
+			fgets(tg_line, 1024, fp_target);
+			
+			if(strcmp(sr_line, tg_line) == 0){
+				table[i][j] = table[i-1][j-1] + 1;
+				tmp_table[i][j] = 1;
+			}
+			else{
+				table[i][j] = max(table[i-1][j], table[i][j-1]);
+			}
+
+			for(int k=0; k<1024; k++){
+				tg_line[k] = '\0';
+			}
+		}
+		fseek(fp_target, 0, SEEK_SET);
+		for(int t=0; t<1024; t++){
+			sr_line[t] = '\0';
+		}
+	}
+	
+
+	for(int i=0; i<row+1; i++){
+		for(int j=0; j<col+1; j++){
+			printf("%d ", table[i][j]);
+		}
+		printf("\n");
+	}
+	
+
+	for(int i=0; i<row+1; i++){
+		for(int j=0; j<col+1; j++){
+			printf("%d ", tmp_table[i][j]);
+		}
+		printf("\n");
+	}
+	
+
+
+	int left_count = 0;
+	int up_count = 0;
+	for(int i=row, j=col, i_before = row, j_before = col; i!=0 && j!=0; ){
+		
+		if(tmp_table[i][j] != 1){
+			if(table[i][j] == table[i-1][j]){
+				i--;
+				up_count++;
+			}
+			else if(table[i][j] == table[i][j-1]){
+				j--;
+				left_count++;
+			}
+		}
+		else{ // if tmp_table[i][j] == 1
+			if(up_count == 0 && left_count != 0){
+				// a
+				if((j_before - j) == 1){
+					printf("%da%d\n", i_before, j_before);
+				}
+				else if((j_before - j) > 1){
+					printf("%da%d,%d\n",i_before, j+1, j_before);
+				}
+				j_before = j;
+				
+			}
+
+			if(up_count != 0 && left_count == 0){
+				// d
+				if((i_before - i) == 1){
+					printf("%dd%d\n", i_before, j_before);
+				}
+				else if((i_before - i) > 1){
+					printf("%d,%dd%d\n", i+1, i_before, j_before);
+				}
+				i_before = i;
+			}
+
+			if(up_count != 0 && left_count != 0){
+				// c
+				if((i_before - i) == 1){
+					printf("%d",i_before);
+				}
+				else{
+					printf("%d,%d", i+1, i_before); // 23,24
+				}
+				printf("c"); // c
+				if((j_before - j) == 1){
+					printf("%d\n", j_before);
+				}
+				else{
+					printf("%d,%d\n", j+1, j_before); // 21,25
+				}
+				i_before = i;
+				j_before = j;
+			}
+
+			i--;
+			j--;
+			i_before--;
+			j_before--;
+
+			up_count = 0;
+			left_count = 0;
+		}
+
+
+	}
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
