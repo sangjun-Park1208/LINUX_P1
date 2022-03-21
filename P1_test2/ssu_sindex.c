@@ -10,6 +10,8 @@
 #include <errno.h>
 #include <time.h>
 
+#define max(a,b) (((a) > (b)) ? (a) : (b))
+
 void help(void);
 char* get_fileType(struct stat *st);
 void regFile_Recursive(char* FILENAME, int FILESIZE, char* path);
@@ -147,11 +149,6 @@ int main(int argc, char** argv){
 
 					int dir_index;
 					char* dir_option = (char*)malloc(1024);
-
-
-//					printf("regFileList_Candidate[0] : %s\n", regFileList_Candidate[0]); // NULL
-
-
 					printf(">> ");
 					scanf("%d %[^\n]", &dir_index, dir_option);
 					dir_diff( dirFileList_Candidate[dir_index], dir_option);
@@ -379,7 +376,7 @@ void print_regFileList(char* path_FILENAME){
 	localtime_r(&mt, &mT);
 
 	if(j>2){
-		for(int s=j-1; s>0; s--){ // loop count : 6
+		for(int s=j-1; s>0; s--){
 			for(int i=1; i <= s-1; i++){
 				char* tmp = (char*)malloc(1024);
 				if(strlen(regFileList_Candidate[i]) > strlen(regFileList_Candidate[i+1])){
@@ -518,7 +515,7 @@ void dirFile_Recursive(char* FILENAME, int FILESIZE, char* path){
 				else{
 					if( (strcmp(extracted_DirFileName, namelist[i]->d_name) == 0) && (get_dirSize(d_pathSet[d]) == FILESIZE) ){
 						w = 0;
-						strcpy(dirFileList_Candidate[t++], d_pathSet[d]); //////
+						strcpy(dirFileList_Candidate[t++], d_pathSet[d]);
 					}
 					dirFile_Recursive(FILENAME, FILESIZE, d_pathSet[d++]);
 				}
@@ -637,7 +634,6 @@ void dir_diff(char* dirFile_selected, char* option){
 	struct dirent** source_namelist = NULL;
 	struct dirent** target_namelist = NULL;
 
-//	printf("dirFileList_Candidate : %s\n", dirFileList_Candidate[0]);
 	int source_filecount = scandir(dirFileList_Candidate[0], &source_namelist, NULL, alphasort);
 	int target_filecount = scandir(dirFile_selected, &target_namelist, NULL, alphasort);
 	struct stat st_source;
@@ -646,6 +642,13 @@ void dir_diff(char* dirFile_selected, char* option){
 	char* sourcefile_path = (char*)malloc(1024);
 	char* targetfile_path = (char*)malloc(1024);
 	char* slash = "/";
+	
+	int file_max_size = max(source_filecount,target_filecount);
+	int* diff_check = (int*)malloc( file_max_size * sizeof(int));
+	int diff_num = 0;
+	for(int i=0; i<file_max_size; i++){
+		diff_check[i] = 0;
+	}
 
 	int source_only = 0; // check if only in source file
 	for(int i=2; i<source_filecount; i++){
@@ -665,9 +668,10 @@ void dir_diff(char* dirFile_selected, char* option){
 			if(strcmp(source_namelist[i]->d_name, target_namelist[s]->d_name) == 0){
 				source_only = 1;
 				if(S_ISREG(st_source.st_mode) && S_ISREG(st_target.st_mode)){
+					diff_check[diff_num++] = s;
+					printf("diff -%s %s %s\n", option, sourcefile_path, targetfile_path);
 					cmp_regInDir();
 					break;
-					//reg_diff();
 				}
 				else if(S_ISREG(st_source.st_mode) && S_ISDIR(st_target.st_mode)){
 					printf("File %s is a regular file while file %s is a directory\n", sourcefile_path, targetfile_path);
@@ -688,6 +692,7 @@ void dir_diff(char* dirFile_selected, char* option){
 		}
 		source_only = 0;
 	}
+	diff_num = 0;
 
 	// MUST!! Initialize sourcefile_path & targetfile_path
 	free(sourcefile_path);
@@ -711,7 +716,11 @@ void dir_diff(char* dirFile_selected, char* option){
 			if(strcmp(target_namelist[i]->d_name, source_namelist[s]->d_name) == 0){
 				target_only = 1;
 				if(S_ISREG(st_target.st_mode) && S_ISREG(st_source.st_mode)){
-					cmp_regInDir();
+					if(diff_check[diff_num] == s){} // exclude overlab with above for loop
+					else{
+						printf("diff -%s %s %s\n", option, sourcefile_path, targetfile_path);
+						cmp_regInDir();
+					}
 				}
 				else if(S_ISREG(st_target.st_mode) && S_ISDIR(st_source.st_mode)){
 					printf("File %s is a directory while file %s is a regular file\n", sourcefile_path, targetfile_path);
