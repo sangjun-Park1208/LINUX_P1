@@ -822,6 +822,15 @@ void LCS(char* sourcePath, char* targetPath){
 	}
 	printf("\n");
 */
+	
+
+	int diff_count = 0;
+	char* diff_str[1024];
+	for(int i=0; i<1024; i++){
+		*(diff_str + i) = (char*)malloc(1024);
+	}
+
+
 	int left_count = 0;
 	int up_count = 0;
 	int i = row;
@@ -830,26 +839,47 @@ void LCS(char* sourcePath, char* targetPath){
 	int j_before = col;
 	int diagonal_count = 0;
 	while(1){
-		printf("diagonal count : %d\n", diagonal_count);
+		char tmp[1024];
 		if (i==0) {
+//			char tmp[1024];
 			if(diagonal_count == 1){
-				printf("1,%dc1,%d\n", row-1, col-1);
+				sprintf(tmp, "1,%dc1,%d", row-1, col-1);
+				printf("%s\n", tmp);
+				strcpy(diff_str[diff_count++], tmp);
+				for(int i=0; i<1024; i++)
+					tmp[i] = '\0';
 				break;
 			}
 			if (j==1){
 				printf("0a1\n");
+				sprintf(tmp, "0a1");
+				strcpy(diff_str[diff_count++], tmp);
+				for(int i=0; i<1024; i++)
+					tmp[i] = '\0';
 			}
 			else if (j>1){
 				printf("0a1,%d\n",j);
+				sprintf(tmp, "0a1,%d", j);
+				strcpy(diff_str[diff_count++], tmp);
+				for(int i=0; i<1024; i++)
+					tmp[i] = '\0';
 			}
 			break;
 		}
 		if (j==0) {
 			if (i==1){
 				printf("1d0\n");
+				sprintf(tmp, "1d0");
+				strcpy(diff_str[diff_count++], tmp);
+				for(int i=0; i<1024; i++)
+					tmp[i] = '\0';
 			}
 			else if(i>1){
 				printf("1,%dd0\n",i);
+				sprintf(tmp, "1,%dd0", i);
+				strcpy(diff_str[diff_count++], tmp);
+				for(int i=0; i<1024; i++)
+					tmp[i] = '\0';
 			}
 			break;
 		}
@@ -870,9 +900,19 @@ void LCS(char* sourcePath, char* targetPath){
 				// a
 				if((j_before - j) == 1){
 					printf("%da%d\n", i_before, j_before);
+					sprintf(tmp, "%da%d", i_before, j_before);
+					strcpy(diff_str[diff_count++], tmp);
+					for(int i=0; i<1024; i++)
+						tmp[i] = '\0';
+
 				}
 				else if((j_before - j) > 1){
 					printf("%da%d,%d\n",i_before, j+1, j_before);
+					sprintf(tmp, "%da%d,%d", i_before, j+1, j_before);
+					strcpy(diff_str[diff_count++], tmp);
+					for(int i=0; i<1024; i++)
+						tmp[i] = '\0';
+
 				}
 				j_before = j;
 				
@@ -882,28 +922,57 @@ void LCS(char* sourcePath, char* targetPath){
 				// d
 				if((i_before - i) == 1){
 					printf("%dd%d\n", i_before, j_before);
+					sprintf(tmp, "%dd%d", i_before, j_before);
+					strcpy(diff_str[diff_count++], tmp);
+					for(int i=0; i<1024; i++)
+						tmp[i] = '\0';
+
 				}
 				else if((i_before - i) > 1){
 					printf("%d,%dd%d\n", i+1, i_before, j_before);
+					sprintf(tmp, "%d,%dd%d", i+1, i_before, j_before);
+					strcpy(diff_str[diff_count++], tmp);
+					for(int i=0; i<1024; i++)
+						tmp[i] = '\0';
+
 				}
 				i_before = i;
 			}
 
 			if(up_count != 0 && left_count != 0){
 				// c
+				char temp[1024];
+				for(int i=0; i<1024; i++)
+					temp[i] = '\0';
+
 				if((i_before - i) == 1){
 					printf("%d",i_before);
+					sprintf(temp, "%d", i_before);
 				}
 				else{
 					printf("%d,%d", i+1, i_before); 
+					sprintf(temp, "%d,%d", i+1, i_before);
 				}
 				printf("c"); 
+				strcat(temp, "c");
+				strcpy(tmp, temp); // %dc  || %d,%dc
+				
+				for(int i=0; i<1024; i++)
+					temp[i] = '\0';
+
+				
 				if((j_before - j) == 1){
 					printf("%d\n", j_before);
+					sprintf(temp, "%d", j_before);
 				}
 				else{
 					printf("%d,%d\n", j+1, j_before);
+					sprintf(temp, "%d,%d", j+1, j_before);
 				}
+				strcat(tmp, temp);
+				strcpy(diff_str[diff_count++], tmp);
+				for(int i=0; i<1024; i++)
+					tmp[i] = '\0';
 				i_before = i;
 				j_before = j;
 			}
@@ -916,6 +985,11 @@ void LCS(char* sourcePath, char* targetPath){
 			up_count = 0;
 			left_count = 0;
 		}
+	}
+	printf("diff_count : %d\n", diff_count);
+
+	for(int i=0; i<diff_count; i++){
+		printf("diff_str[%d] : %s\n", i, diff_str[i]);
 	}
 
 }
