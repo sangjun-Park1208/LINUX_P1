@@ -339,7 +339,7 @@ void regFile_Recursive(char* FILENAME, int FILESIZE, char* path){ // target file
 			stat(pathSet[k], &st);
 			if(i==0 || i==1){}
 			else{
-				printf("real path : %s\n", tmp_path);
+//				printf("real path : %s\n", tmp_path);
 			}
 
 			if(S_ISDIR(st.st_mode)){
@@ -505,7 +505,7 @@ void dirFile_Recursive(char* FILENAME, int FILESIZE, char* path){
 			stat(d_pathSet[d], &st);
 			if(i==0 || i==1){}
 			else{
-				printf("real path : %s\n", tmp_path);
+//				printf("real path : %s\n", tmp_path);
 			}
 			free(tmp_path);
 
@@ -624,13 +624,13 @@ int get_dirSize(char* path){
 
 
 void reg_diff(char* regFile_selected, char* option){
-	printf("regfile <%s> selected!\n", regFile_selected);
-	printf("option : %s\n", option);
+	printf("regFileList_Candidate[0] : %s\n", regFileList_Candidate[0]);
+	LCS(regFileList_Candidate[0], regFile_selected);
 }
 
 void dir_diff(char* dirFile_selected, char* option){
-	printf("directory <%s> selected!\n", dirFile_selected);
-	printf("option : %s\n", option);
+//	printf("directory <%s> selected!\n", dirFile_selected);
+//	printf("option : %s\n", option);
 
 	struct dirent** source_namelist = NULL;
 	struct dirent** target_namelist = NULL;
@@ -779,7 +779,15 @@ void LCS(char* sourcePath, char* targetPath){
 			tmp_table[i][j] = 0;
 		}
 	}
-	
+/*
+	for(int i=0; i<row+1; i++){
+		for(int j=0; j<col+1; j++){
+			printf("%d ", tmp_table[i][j]);
+		}
+		printf("\n");
+	}
+	printf("\n");
+*/	
 	char* sr_line = (char*)malloc(1024);
 	char* tg_line = (char*)malloc(1024);
 
@@ -805,33 +813,47 @@ void LCS(char* sourcePath, char* targetPath){
 			sr_line[t] = '\0';
 		}
 	}
-	
 /*
-	for(int i=0; i<row+1; i++){
-		for(int j=0; j<col+1; j++){
-			printf("%d ", table[i][j]);
-		}
-		printf("\n");
-	}
-	
-
 	for(int i=0; i<row+1; i++){
 		for(int j=0; j<col+1; j++){
 			printf("%d ", tmp_table[i][j]);
 		}
 		printf("\n");
 	}
-*/	
-
-
+	printf("\n");
+*/
 	int left_count = 0;
 	int up_count = 0;
 	int i = row;
 	int j = col;
 	int i_before = row;
 	int j_before = col;
-	for(; i!=0 && j!=0; ){
-		
+	int diagonal_count = 0;
+	while(1){
+		printf("diagonal count : %d\n", diagonal_count);
+		if (i==0) {
+			if(diagonal_count == 1){
+				printf("1,%dc1,%d\n", row-1, col-1);
+				break;
+			}
+			if (j==1){
+				printf("0a1\n");
+			}
+			else if (j>1){
+				printf("0a1,%d\n",j);
+			}
+			break;
+		}
+		if (j==0) {
+			if (i==1){
+				printf("1d0\n");
+			}
+			else if(i>1){
+				printf("1,%dd0\n",i);
+			}
+			break;
+		}
+
 		if(tmp_table[i][j] != 1){
 			if(table[i][j] == table[i-1][j]){
 				i--;
@@ -843,6 +865,7 @@ void LCS(char* sourcePath, char* targetPath){
 			}
 		}
 		else{ // if tmp_table[i][j] == 1
+			diagonal_count++;
 			if(up_count == 0 && left_count != 0){
 				// a
 				if((j_before - j) == 1){
@@ -895,28 +918,6 @@ void LCS(char* sourcePath, char* targetPath){
 		}
 	}
 
-	if( i==j && i ==0){
-		return;
-	}
-	if(j == 0){
-		if(i > 1){
-			printf("%d,%dd%d\n", i_before - i+1, i, j);
-		}
-		else{
-			printf("%dd%d\n", j, i);
-		}
-	}
-
-	if(i == 0){
-		if(j > 1){
-			printf("%da%d,%d\n", j_before - j, i+1, j_before);
-		}
-		else{
-			printf("%da%d\n", i, j_before);
-		}
-
-	}
-	
 }
 
 
