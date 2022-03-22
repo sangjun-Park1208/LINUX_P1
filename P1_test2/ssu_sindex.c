@@ -26,6 +26,8 @@ void reg_diff(char* regFile_selected, char* option);
 void dir_diff(char* dirFile_selected, char* option);
 int getTotalLine(char* filePath);
 void LCS(char* sourcePath, char* targetPath);
+void printOneLine(char* fileName, int lineNum, int type);
+void printManyLine(char* fileName, int min, int max, int type);
 
 char* regFileList_Candidate[1024];
 char* dirFileList_Candidate[1024];
@@ -624,13 +626,11 @@ int get_dirSize(char* path){
 
 
 void reg_diff(char* regFile_selected, char* option){
-	printf("regFileList_Candidate[0] : %s\n", regFileList_Candidate[0]);
+//	printf("regFileList_Candidate[0] : %s\n", regFileList_Candidate[0]);
 	LCS(regFileList_Candidate[0], regFile_selected);
 }
 
 void dir_diff(char* dirFile_selected, char* option){
-//	printf("directory <%s> selected!\n", dirFile_selected);
-//	printf("option : %s\n", option);
 
 	struct dirent** source_namelist = NULL;
 	struct dirent** target_namelist = NULL;
@@ -779,15 +779,7 @@ void LCS(char* sourcePath, char* targetPath){
 			tmp_table[i][j] = 0;
 		}
 	}
-/*
-	for(int i=0; i<row+1; i++){
-		for(int j=0; j<col+1; j++){
-			printf("%d ", tmp_table[i][j]);
-		}
-		printf("\n");
-	}
-	printf("\n");
-*/	
+	
 	char* sr_line = (char*)malloc(1024);
 	char* tg_line = (char*)malloc(1024);
 
@@ -841,24 +833,20 @@ void LCS(char* sourcePath, char* targetPath){
 	while(1){
 		char tmp[1024];
 		if (i==0) {
-//			char tmp[1024];
 			if(diagonal_count == 1){
 				sprintf(tmp, "1,%dc1,%d", row-1, col-1);
-				printf("%s\n", tmp);
 				strcpy(diff_str[diff_count++], tmp);
 				for(int i=0; i<1024; i++)
 					tmp[i] = '\0';
 				break;
 			}
 			if (j==1){
-				printf("0a1\n");
 				sprintf(tmp, "0a1");
 				strcpy(diff_str[diff_count++], tmp);
 				for(int i=0; i<1024; i++)
 					tmp[i] = '\0';
 			}
 			else if (j>1){
-				printf("0a1,%d\n",j);
 				sprintf(tmp, "0a1,%d", j);
 				strcpy(diff_str[diff_count++], tmp);
 				for(int i=0; i<1024; i++)
@@ -868,14 +856,12 @@ void LCS(char* sourcePath, char* targetPath){
 		}
 		if (j==0) {
 			if (i==1){
-				printf("1d0\n");
 				sprintf(tmp, "1d0");
 				strcpy(diff_str[diff_count++], tmp);
 				for(int i=0; i<1024; i++)
 					tmp[i] = '\0';
 			}
 			else if(i>1){
-				printf("1,%dd0\n",i);
 				sprintf(tmp, "1,%dd0", i);
 				strcpy(diff_str[diff_count++], tmp);
 				for(int i=0; i<1024; i++)
@@ -899,7 +885,6 @@ void LCS(char* sourcePath, char* targetPath){
 			if(up_count == 0 && left_count != 0){
 				// a
 				if((j_before - j) == 1){
-					printf("%da%d\n", i_before, j_before);
 					sprintf(tmp, "%da%d", i_before, j_before);
 					strcpy(diff_str[diff_count++], tmp);
 					for(int i=0; i<1024; i++)
@@ -907,7 +892,6 @@ void LCS(char* sourcePath, char* targetPath){
 
 				}
 				else if((j_before - j) > 1){
-					printf("%da%d,%d\n",i_before, j+1, j_before);
 					sprintf(tmp, "%da%d,%d", i_before, j+1, j_before);
 					strcpy(diff_str[diff_count++], tmp);
 					for(int i=0; i<1024; i++)
@@ -921,7 +905,6 @@ void LCS(char* sourcePath, char* targetPath){
 			if(up_count != 0 && left_count == 0){
 				// d
 				if((i_before - i) == 1){
-					printf("%dd%d\n", i_before, j_before);
 					sprintf(tmp, "%dd%d", i_before, j_before);
 					strcpy(diff_str[diff_count++], tmp);
 					for(int i=0; i<1024; i++)
@@ -929,7 +912,6 @@ void LCS(char* sourcePath, char* targetPath){
 
 				}
 				else if((i_before - i) > 1){
-					printf("%d,%dd%d\n", i+1, i_before, j_before);
 					sprintf(tmp, "%d,%dd%d", i+1, i_before, j_before);
 					strcpy(diff_str[diff_count++], tmp);
 					for(int i=0; i<1024; i++)
@@ -946,14 +928,11 @@ void LCS(char* sourcePath, char* targetPath){
 					temp[i] = '\0';
 
 				if((i_before - i) == 1){
-					printf("%d",i_before);
 					sprintf(temp, "%d", i_before);
 				}
 				else{
-					printf("%d,%d", i+1, i_before); 
 					sprintf(temp, "%d,%d", i+1, i_before);
 				}
-				printf("c"); 
 				strcat(temp, "c");
 				strcpy(tmp, temp); // %dc  || %d,%dc
 				
@@ -962,11 +941,9 @@ void LCS(char* sourcePath, char* targetPath){
 
 				
 				if((j_before - j) == 1){
-					printf("%d\n", j_before);
 					sprintf(temp, "%d", j_before);
 				}
 				else{
-					printf("%d,%d\n", j+1, j_before);
 					sprintf(temp, "%d,%d", j+1, j_before);
 				}
 				strcat(tmp, temp);
@@ -986,58 +963,240 @@ void LCS(char* sourcePath, char* targetPath){
 			left_count = 0;
 		}
 	}
-	printf("diff_count : %d\n", diff_count);
 
-	for(int i=0; i<diff_count; i++){
-		printf("diff_str[%d] : %s\n", i, diff_str[i]);
+	char* front[diff_count];
+	char* back[diff_count];
+	char* mid[diff_count];
+	for(int j=0; j<diff_count; j++){
+		*(front + j) = (char*)malloc(30);
+		*(back + j) = (char*)malloc(30);
+		*(mid + j) = (char*)malloc(30);
 	}
 
+	for(int i=0; i<diff_count ; i++){
+		char* tmp = (char*)malloc(1024);
+		if(strchr(diff_str[i], 'c') != NULL){
+			strcpy(mid[i], "c");
+			tmp = strtok(diff_str[i], "c");
+			strcpy(front[i], tmp);
+			tmp = strtok(NULL, "c");
+			strcpy(back[i], tmp);
+		}
+		if(strchr(diff_str[i], 'a') != NULL){
+			strcpy(mid[i], "a");
+			tmp = strtok(diff_str[i], "a");
+			strcpy(front[i], tmp);
+			tmp = strtok(NULL, "a");
+			strcpy(back[i], tmp);
+	
+		}
+		if(strchr(diff_str[i], 'd') != NULL){
+			strcpy(mid[i], "d");
+			tmp = strtok(diff_str[i], "d");
+			strcpy(front[i], tmp);
+			tmp = strtok(NULL, "d");
+			strcpy(back[i], tmp);
+		}
+		for(int i=0; i<1024; i++)
+			tmp[i] = '\0';
+
+	}
+/*
+	for(int i=0; i<diff_count; i++){
+		printf("front[%d] : %s, back[%d] : %s, mid[%d] : %s\n", i, front[i], i, back[i], i, mid[i]);
+		
+	}
+*/
+	for(int i=diff_count-1; i>=0; i--){
+		printf("%s%s%s\n", front[i], mid[i], back[i]);
+		int min, max;
+		char* tmp = (char*)malloc(10);
+		if(strcmp(mid[i], "a") == 0){
+			if(strchr(front[i], ',') != NULL){ // front
+				tmp = strtok(front[i], ",");
+				min = atoi(tmp);
+				tmp = strtok(NULL, ",");
+				max = atoi(tmp);
+				printManyLine(sourcePath, min, max, 0);
+//				printf("max : %d, sr_LineCount : %d\n", max, sr_LineCount);
+				if(max >= sr_LineCount+1){
+					printf("\n\\No newline at end of file\n");
+				}
+			}
+			else{
+				printOneLine(sourcePath, atoi(front[i]), 0);
+				if(atoi(front[i]) >= sr_LineCount+1){
+					printf("\n\\No newline at end of file\n");
+				}
+			}
+
+			if(strchr(back[i], ',') != NULL){ // back
+				tmp = strtok(back[i], ",");
+				min = atoi(tmp);
+				tmp = strtok(NULL, ",");
+				max = atoi(tmp);
+				printManyLine(targetPath, min, max, 1);
+//				printf("max : %d, tg_LineCount : %d\n", max, tg_LineCount);
+				if(max >= tg_LineCount+1){
+					printf("\n\\No newline at end of file\n");
+				}
+
+			}
+			else{
+				printOneLine(targetPath, atoi(back[i]), 1);
+				if(atoi(front[i]) >= tg_LineCount+1){
+					printf("\n\\No newline at end of file\n");
+				}
+
+			}
+
+		}
+		else if(strcmp(mid[i], "d") == 0){
+			if(strchr(front[i], ',') != NULL){ // front
+				tmp = strtok(front[i], ",");
+				min = atoi(tmp);
+				tmp = strtok(NULL, ",");
+				max = atoi(tmp);
+				printManyLine(sourcePath, min, max, 0);	
+//				printf("max : %d, sr_LineCount : %d\n", max, sr_LineCount);
+				if(max >= sr_LineCount+1){
+					printf("\n\\No newline at end of file\n");
+				}
+
+			}
+			else{
+				printOneLine(sourcePath, atoi(front[i]), 0);
+				if(atoi(front[i]) >= sr_LineCount+1){
+					printf("\n\\No newline at end of file\n");
+				}
+
+			}
+
+			if(strchr(back[i], ',') != NULL){ // back
+				tmp = strtok(back[i], ",");
+				min = atoi(tmp);
+				tmp = strtok(NULL, ",");
+				max = atoi(tmp);
+				printManyLine(targetPath, min, max, 1);
+//				printf("max : %d, tg_LineCount : %d\n", max, tg_LineCount);
+				if(max >= tg_LineCount+1){
+					printf("\n\\No newline at end of file\n");
+				}
+
+			}
+			else{
+				printOneLine(targetPath, atoi(back[i]), 1);
+				if(atoi(front[i]) >= tg_LineCount+1){
+					printf("\n\\No newline at end of file\n");
+				}
+
+			}
+
+
+
+		}
+		else if(strcmp(mid[i], "c") == 0){
+			if(strchr(front[i], ',') != NULL){ // front
+				tmp = strtok(front[i], ",");
+				min = atoi(tmp);
+				tmp = strtok(NULL, ",");
+				max = atoi(tmp);
+				printManyLine(sourcePath, min, max, 0);
+//				printf("max : %d, sr_LineCount : %d\n", max, sr_LineCount);
+				if(max >= sr_LineCount+1){
+					printf("\n\\No newline at end of file\n");
+				}
+
+			}
+			else{
+				printOneLine(sourcePath, atoi(front[i]), 0);
+				if(atoi(front[i]) >= sr_LineCount+1){
+					printf("\n\\No newline at end of file\n");
+				}
+
+			}
+
+			printf("---\n");
+
+			if(strchr(back[i], ',') != NULL){ // back
+				tmp = strtok(back[i], ",");
+				min = atoi(tmp);
+				tmp = strtok(NULL, ",");
+				max = atoi(tmp);
+				printManyLine(targetPath, min, max, 1);
+//				printf("max : %d, tg_LineCount : %d\n", max, tg_LineCount);
+				if(max >= tg_LineCount+1){
+					printf("\n\\No newline at end of file\n");
+				}
+			}
+			else{
+				printOneLine(targetPath, atoi(back[i]), 1);
+				if(atoi(front[i]) >= tg_LineCount+1){
+					printf("\n\\No newline at end of file\n");
+				}
+
+			}
+
+
+		}
+	}
+	printf("\n");
 }
 
+void printOneLine(char* fileName, int lineNum, int type){
+	FILE* fp;
+	int linecount = 0;
+	char buffer[1024];
+	if((fp = fopen(fileName, "r")) == NULL){
+		fprintf(stderr, "file open error : %s\n", fileName);
+		return;
+	}
+	while(fgets(buffer, 1024, fp) != NULL){
+		linecount++;
+		if(linecount == lineNum){
+			if(type == 0){
+				printf("< ");
+			}
+			else if(type == 1){
+				printf("> ");
+			}
+			printf("%s", buffer);
+			break;
+		}
+	}
+	fclose(fp);
+	return;
+}
 
+void printManyLine(char* fileName, int min, int max, int type){ 
+	FILE* fp;
+	int linecount = 0;
+	char* buffer_set[100];
+	for(int i=0; i<100; i++){
+		*(buffer_set + i) = (char*)malloc(1024);
+	}
+	int buf_index = 0;
 
+	if((fp = fopen(fileName, "r")) == NULL){
+		fprintf(stderr, "file open error : %s\n", fileName);
+		return;
+	}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+	while(fgets(buffer_set[linecount], 1024, fp) != NULL){
+		linecount++;
+		if( (min <= linecount) && (linecount <= max) ){
+			if(type == 0){
+				printf("< ");
+			}
+			else if(type == 1){
+				printf("> ");
+			}
+			printf("%s",buffer_set[linecount-1]);
+		}
+	}
+	fclose(fp);
+	return;
+}
 
 
 
