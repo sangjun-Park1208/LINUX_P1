@@ -1,7 +1,0 @@
-i am a boy
-The normal output format consists
-differences. Each section
-looks  like this:
-i am a boy
-Replace (change) line 5 in the first fil
-with lines 4-5 from the second file.
