@@ -132,8 +132,10 @@ int main(int argc, char** argv){
 				}				
 				if(S_ISREG(st.st_mode)){ // if regular file
 					print_regFileList(FILENAME_realpath); // print regular file list
-					if(j == 1)
+					if(j == 1){
+						j = 0;
 						break;
+					}
 					
 					int reg_index;
 					char* reg_option = (char*)malloc(1024);
