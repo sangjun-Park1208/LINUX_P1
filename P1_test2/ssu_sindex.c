@@ -107,8 +107,8 @@ int main(int argc, char** argv){
 								regFile_Recursive(FILENAME_realpath, st.st_size, realPath);
 							}
 							if(S_ISDIR(st.st_mode)){
-								printf("FILENAME_realpath : %s\n", FILENAME_realpath);
-								printf("FILENAME's size(dir) : %d\n", get_dirSize(FILENAME_realpath));
+//								printf("FILENAME_realpath : %s\n", FILENAME_realpath);
+//								printf("FILENAME's size(dir) : %d\n", get_dirSize(FILENAME_realpath));
 								dirFile_Recursive(FILENAME_realpath, get_dirSize(FILENAME_realpath), realPath);
 								w = 0;
 							}
@@ -645,11 +645,6 @@ void dir_diff(char* dirFile_selected, char* option){
 	char* slash = "/";
 	
 	int file_max_size = max(source_filecount,target_filecount);
-	int* diff_check = (int*)malloc( file_max_size * sizeof(int));
-	int diff_num = 0;
-	for(int i=0; i<file_max_size; i++){
-		diff_check[i] = 0;
-	}
 
 	int source_only = 0; // check if only in source file
 	for(int i=2; i<source_filecount; i++){
@@ -669,7 +664,6 @@ void dir_diff(char* dirFile_selected, char* option){
 			if(strcmp(source_namelist[i]->d_name, target_namelist[s]->d_name) == 0){
 				source_only = 1;
 				if(S_ISREG(st_source.st_mode) && S_ISREG(st_target.st_mode)){
-					diff_check[diff_num++] = s;
 					printf("diff -%s %s %s\n", option, sourcefile_path, targetfile_path);
 					LCS(sourcefile_path, targetfile_path);
 					break;
@@ -693,7 +687,6 @@ void dir_diff(char* dirFile_selected, char* option){
 		}
 		source_only = 0;
 	}
-	diff_num = 0;
 
 	// MUST!! Initialize sourcefile_path & targetfile_path
 	free(sourcefile_path);
@@ -716,13 +709,7 @@ void dir_diff(char* dirFile_selected, char* option){
 
 			if(strcmp(target_namelist[i]->d_name, source_namelist[s]->d_name) == 0){
 				target_only = 1;
-				if(S_ISREG(st_target.st_mode) && S_ISREG(st_source.st_mode)){
-					if(diff_check[diff_num] == s){} // exclude overlab with above for loop
-					else{
-						printf("diff -%s %s %s\n", option, sourcefile_path, targetfile_path);
-						LCS(sourcefile_path, targetfile_path);
-					}
-				}
+				if(S_ISREG(st_target.st_mode) && S_ISREG(st_source.st_mode)){} // exclude overlap : do nothing(already compared)
 				else if(S_ISREG(st_target.st_mode) && S_ISDIR(st_source.st_mode)){
 					printf("File %s is a directory while file %s is a regular file\n", sourcefile_path, targetfile_path);
 				}
