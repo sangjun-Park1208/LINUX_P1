@@ -22,9 +22,12 @@ void debug_fileExist();
 void debug_relativePathError();
 void dirFile_Recursive(char* FILENAME, int FILESIZE, char* path);
 int get_dirSize(char* path);
-void reg_diff(char* regFile_selected, char* option);
-void dir_diff(char* dirFile_selected, char* option);
+//void reg_diff(char* regFile_selected, char* option);
+void reg_diff(char* regFile_selected);
+//void dir_diff(char* dirFile_selected, char* option);
+void dir_diff(char* dirFile_selected);
 int getTotalLine(char* filePath);
+//void LCS(char* sourcePath, char* targetPath, int opt_type);
 void LCS(char* sourcePath, char* targetPath);
 void printOneLine(char* fileName, int lineNum, int type);
 void printManyLine(char* fileName, int min, int max, int type);
@@ -40,6 +43,10 @@ int t; // dirFileList_Candidate[t]
 int d; // d_pathSet[d]
 int w; // ds_pathSet[w]
 char* rwx[8] = {"---", "--x", "-w-", "-wx", "r--", "r-x", "rw-", "rwx"};
+//char* opt[16] = {
+//				"----", "---r", "--i-", "--ir",	"-s--", "-s-r", "-si-", "-sir",
+//				"q---", "q--r", "q-i-", "q-ir",	"qs--", "qs-r", "qsi-", "qsir"
+//				}; // q, s, i, r
 
 int main(int argc, char** argv){
 	struct timeval startTime, endTime;
@@ -140,8 +147,18 @@ int main(int argc, char** argv){
 					int reg_index;
 					char* reg_option = (char*)malloc(1024);
 					printf(">> ");
-					scanf("%d %[^\n]", &reg_index, reg_option);
-					reg_diff( regFileList_Candidate[reg_index], reg_option);
+//					scanf("%d%[^\n]", &reg_index, reg_option);
+					scanf("%d", &reg_index);
+//					printf("reg_option : %s\n", reg_option);
+//					reg_diff( regFileList_Candidate[reg_index], reg_option);
+					
+					if(reg_index > j-1){
+						printf("Select index below %d\n", j);
+						j = 0;
+						break;
+					}
+					j = 0;
+					reg_diff( regFileList_Candidate[reg_index]);
 					break;
 				}
 				
@@ -155,8 +172,16 @@ int main(int argc, char** argv){
 					int dir_index;
 					char* dir_option = (char*)malloc(1024);
 					printf(">> ");
-					scanf("%d %[^\n]", &dir_index, dir_option);
-					dir_diff( dirFileList_Candidate[dir_index], dir_option);
+//					scanf("%d %[^\n]", &dir_index, dir_option);
+					scanf("%d", &dir_index);
+//					dir_diff( dirFileList_Candidate[dir_index], dir_option);
+					
+					if(dir_index > t-1){
+						printf("Select index below %d\n", t);
+						t = 0;
+						break;
+					}
+					dir_diff( dirFileList_Candidate[dir_index]);
 					for(int i=0; i<t; i++){
 						memset(dirFileList_Candidate[i], '\0', 1024);
 					}
@@ -198,14 +223,15 @@ int main(int argc, char** argv){
 void help(){
 	printf("Usage:\n");
 	printf("	> find [FILENAME] [PATH]\n");
-	printf("		>> [INDEX] [OPTION ... ]\n");
+//	printf("		>> [INDEX] [OPTION ... ]\n");
+	printf("		>> [INDEX]\n");
 	printf("	> help\n");
 	printf("	> exit\n\n");
-	printf("	[OPTIONS ... ]\n");
-	printf("	q : report only when files differ\n");
-	printf("	s : report when two files are the same\n");
-	printf("	i : ignore case differences in file contents\n");
-	printf("	r : recursively compare any subdirectories found\n");
+//	printf("	[OPTIONS ... ]\n");
+//	printf("	q : report only when files differ\n");
+//	printf("	s : report when two files are the same\n");
+//	printf("	i : ignore case differences in file contents\n");
+//	printf("	r : recursively compare any subdirectories found\n");
 	return;
 }
 
@@ -434,7 +460,7 @@ void print_regFileList(char* path_FILENAME){
 		free(tmpreg);
 	}
 
-	j = 0;
+//	j = 0;
 }
 
 char* map_fileType(struct stat *st){
@@ -627,12 +653,51 @@ int get_dirSize(char* path){
 
 
 
-void reg_diff(char* regFile_selected, char* option){
+//void reg_diff(char* regFile_selected, char* option){
+void reg_diff(char* regFile_selected){
 //	printf("regFileList_Candidate[0] : %s\n", regFileList_Candidate[0]);
+
+/*	
+	int opt_type = 0;
+	if(strchr(option, 'q') != NULL){
+		opt_type = opt_type | 0b1000;
+	}
+	if(strchr(option, 's') != NULL){
+		opt_type = opt_type | 0b0100;
+	}
+	if(strchr(option, 'i') != NULL){
+		opt_type = opt_type | 0b0010;
+	}
+	if(strchr(option, 'r') != NULL){
+		opt_type = opt_type | 0b0001;
+	}
+*/
+
+//	printf("opt_type : %s\n", opt[opt_type]);
+//	LCS(regFileList_Candidate[0], regFile_selected, opt_type);
 	LCS(regFileList_Candidate[0], regFile_selected);
+
 }
 
-void dir_diff(char* dirFile_selected, char* option){
+//void dir_diff(char* dirFile_selected, char* option){
+void dir_diff(char* dirFile_selected){
+
+/*
+	int opt_type = 0;
+	if(strchr(option, 'q') != NULL){
+		opt_type = opt_type | 0b1000;
+	}
+	if(strchr(option, 's') != NULL){
+		opt_type = opt_type | 0b0100;
+	}
+	if(strchr(option, 'i') != NULL){
+		opt_type = opt_type | 0b0010;
+	}
+	if(strchr(option, 'r') != NULL){
+		opt_type = opt_type | 0b0001;
+	}
+//	printf("opt_type : %s\n", opt[opt_type]);
+*/
 
 	struct dirent** source_namelist = NULL;
 	struct dirent** target_namelist = NULL;
@@ -666,7 +731,9 @@ void dir_diff(char* dirFile_selected, char* option){
 			if(strcmp(source_namelist[i]->d_name, target_namelist[s]->d_name) == 0){
 				source_only = 1;
 				if(S_ISREG(st_source.st_mode) && S_ISREG(st_target.st_mode)){
-					printf("diff -%s %s %s\n", option, sourcefile_path, targetfile_path);
+//					printf("diff -%s %s %s\n", option, sourcefile_path, targetfile_path);
+					printf("diff %s %s\n", sourcefile_path, targetfile_path);
+//					LCS(sourcefile_path, targetfile_path, opt_type);
 					LCS(sourcefile_path, targetfile_path);
 					break;
 				}
@@ -743,7 +810,9 @@ int getTotalLine(char* filePath){
 	return line;
 }
 
+//void LCS(char* sourcePath, char* targetPath, int opt_type){
 void LCS(char* sourcePath, char* targetPath){
+//	printf("opt_type : %d\n", opt_type);
 	FILE* fp_source; 
 	FILE* fp_target;
 	fp_source = fopen(sourcePath, "r");
